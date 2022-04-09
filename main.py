@@ -12,9 +12,9 @@ class Wallet:
         name - название,
         balance - баланс.
     """
-    def __init__(self, name='Счёт 1', currency='RUB', balance=0.00):
+    def __init__(self, name='Счёт по умолчанию', currency='₽', balance=0.00):
         """
-        Присваивает кошельку свойства при создании и при извлечении его из БД.
+        Присваивает кошельку свойства при создании или при извлечении его из БД.
         """
         self.__balance = float(balance)
         self.currency = currency
@@ -53,27 +53,58 @@ class Wallet:
 
         # Запись строки кошелька с новым id в файл
         with open('wallets.csv', 'a', encoding='UTF-8') as file:
-            file.write(f'\n{wallet_id},{self.name},{self.currency},{self.__balance}' )
+            file.write(f'\n{wallet_id},{self.name},{self.currency},{self.__balance}')
+
+    def change_currency(self, new_currency: str):
+        """Меняет валюту кошелька и переводит деньги по курсу.
+        Принимает строку - новая валюта, возвращает новый баланс."""
+
+        if new_currency == self.currency:  # Если новая валюта = старая валюта, то просто возвращает баланс
+            return self.__balance
+
+        exchange = currencies[f'{self.currency} {new_currency}']  # Ищет в словаре валют нужную пару
+        self.__balance /= exchange
+        return self.__balance
 
 
 """ Начало работы программы. Считывание всех данных из CSV файлов. """
 
 
 # Загрузка кошельков
-def db_reload():
+def wallets_reload():
     """Загружает данные о счетах из CSV файла. Возвращает словарь {id : Объект класса Wallet (т.е. счёт)}"""
     w = {}  # wallet
     print('Обновление данных о счетах...')
     with open('wallets.csv', encoding='UTF-8') as file:
         for i in file.readlines():
             par = i.strip().split(',')
-            w[par[0]] = Wallet(*tuple(par[1:]))
-            print(f'Счёт id: {par[0]} загружен: {w[par[0]].info()}')
+            w[int(par[0])] = Wallet(*tuple(par[1:]))
+            print(f'Счёт id: {par[0]} загружен: {w[int(par[0])].info()}')
     print('Данные о кошельках обновлены!')
     return w
 
 
-wallets = db_reload()
+def currencies_reload():
+    """Загружает курсы валют из CSV файла. Возвращает словарь {currency1-currency2 (str): exchange rate (float), ...}"""
+
+    print('Обновление курсов валют...')
+    exchange_rates = {}
+    with open('currencies.csv', encoding='UTF-8') as file:
+        for i in file.readlines():
+            exchange_rates[i.strip().split(',')[0]] = float(i.strip().split(',')[1])
+    print('Курсы валют обновлены!')
+    return exchange_rates
+
+
+# Обновляем данные о кошельках и курсах валют перед стартом программы
+wallets = wallets_reload()
+currencies = currencies_reload()
+print(currencies)
+
+print(wallets[2].info())
+print(wallets[2].change_currency('₽'))
+print(wallets[2].info())
+
 # new_wallet = Wallet(balance='555')
 # new_wallet.add_to_db()
 

@@ -1,4 +1,5 @@
 from pprint import pprint
+from functools import wraps
 
 
 class Wallet:
@@ -12,13 +13,14 @@ class Wallet:
         name - название,
         balance - баланс.
     """
+
     def __init__(self, name='Счёт по умолчанию', currency='₽', balance=0.00):
         """
         Присваивает кошельку свойства при создании или при извлечении его из БД.
         """
-        self.__balance = float(balance)
-        self.currency = currency
         self.name = name
+        self.currency = currency
+        self.__balance = float(balance)
 
     def __del__(self):
         print(f'Кошелёк "{self.name}" удалён')
@@ -55,8 +57,8 @@ class Wallet:
         with open('wallets.csv', 'a', encoding='UTF-8') as file:
             file.write(f'\n{wallet_id},{self.name},{self.currency},{self.__balance}')
 
-    def change_currency(self, new_currency: str):
-        """Меняет валюту кошелька и переводит деньги по курсу.
+    def change_currency(self, id: int, new_currency: str):
+        """Меняет валюту кошелька и переводит деньги по курсу. Вызывает wallets_rewrite() для замены записи в CSV файле
         Принимает строку - новая валюта, возвращает новый баланс."""
 
         if new_currency == self.currency:  # Если новая валюта = старая валюта, то просто возвращает баланс
@@ -64,6 +66,13 @@ class Wallet:
 
         exchange = currencies[f'{self.currency} {new_currency}']  # Ищет в словаре валют нужную пару
         self.__balance /= exchange
+
+        self.currency = new_currency
+
+        "РЕАЛИЗОВАТЬ В ЭТОЙ ФУНКЦИЮ ЗАМЕНЫ ВАЛЮТЫ В CSV ФАЙЛЕ"
+
+        wallets_rewrite(id, self.name, self.currency, self.__balance)
+
         return self.__balance
 
 
@@ -74,14 +83,36 @@ class Wallet:
 def wallets_reload():
     """Загружает данные о счетах из CSV файла. Возвращает словарь {id : Объект класса Wallet (т.е. счёт)}"""
     w = {}  # wallet
-    print('Обновление данных о счетах...')
+    print('Обновление данных о счетах...==========')
     with open('wallets.csv', encoding='UTF-8') as file:
         for i in file.readlines():
             par = i.strip().split(',')
             w[int(par[0])] = Wallet(*tuple(par[1:]))
             print(f'Счёт id: {par[0]} загружен: {w[int(par[0])].info()}')
-    print('Данные о кошельках обновлены!')
+    print('Данные о кошельках обновлены!==========')
     return w
+
+
+def wallets_rewrite(id: int, name: str, currency: str, balance: float):
+    """Открывает файл CSV и заменяет в нём 1 строку с указанными параметрами"""
+
+    # Читаем из CSV данные в строку
+    with open('wallets.csv', encoding='UTF-8') as file:
+        text_wallets = file.read()
+
+    # Находим индекс начала строки по id
+    index1 = text_wallets.find(f'\n{id},') + 1
+    # Находим индекс конца строки (Поиск находит первый перенос строки, начиная index1)
+    index2 = text_wallets.find('\n', index1)
+
+    # Заменяем в строке нужную запись
+    text_wallets = text_wallets.replace(text_wallets[index1:index2],
+                                        f'{id},{name},{currency},{balance}')
+
+    # Записываем обновлённую строку обратно в файл
+    with open('wallets.csv', 'w', encoding='UTF-8') as file:
+        file.write(text_wallets)
+    print(f'Строка с id={id} успешно отредактирована!')
 
 
 def currencies_reload():
@@ -99,13 +130,7 @@ def currencies_reload():
 # Обновляем данные о кошельках и курсах валют перед стартом программы
 wallets = wallets_reload()
 currencies = currencies_reload()
-print(currencies)
 
 print(wallets[2].info())
-print(wallets[2].change_currency('₽'))
+print(wallets[2].change_currency(2, '₽'))
 print(wallets[2].info())
-
-# new_wallet = Wallet(balance='555')
-# new_wallet.add_to_db()
-
-

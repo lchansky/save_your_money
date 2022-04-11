@@ -30,23 +30,27 @@ class Wallet:
         """Возвращает инфу о счёте в виде кортежа (name, currency, balance)"""
         return self.name, self.currency, self._balance
 
-    def inc_balance(self, id: int, num: float):
-        """Принимает int или float. Увеличивает баланс кошелька"""
-        self._balance += float(num)
-        wallets_rewrite(id, self.name, self.currency, self._balance)
-        return num
+    def get_currency(self):
+        """Возвращает валюту счёта (currency: str)"""
+        return self.currency
 
-    def dec_balance(self, id: int, num: float):
+    def inc_balance(self, id: int, amount: float):
+        """Принимает int или float. Увеличивает баланс кошелька"""
+        self._balance += float(amount)
+        wallets_rewrite(id, self.name, self.currency, self._balance)
+        return amount
+
+    def dec_balance(self, id: int, amount: float):
         """Принимает int или float. Уменьшает баланс кошелька"""
-        if self._balance - num < 0:
+        if self._balance - amount < 0:
             print(
-                f"""Ошибка при уменьшении баланса кошелька. Недостаточно средств. 
-                \r(Не хватает {num - self._balance} {self.currency})""")
+                f"""Ошибка при уменьшении баланса кошелька id={id}. Недостаточно средств. 
+                \r(Не хватает {amount - self._balance} {self.currency})""")
             raise ValueError('Недостаточно средств')
         else:
-            self._balance -= num
+            self._balance -= amount
         wallets_rewrite(id, self.name, self.currency, self._balance)
-        return num
+        return amount
 
     def add_to_db(self):
         """Добавляет инфу о кошельке в CSV"""
@@ -66,13 +70,7 @@ class Wallet:
         if new_currency == self.currency:  # Если новая валюта = старая валюта, то просто возвращает баланс
             return self._balance
 
-        try:
-            exchange = currencies[f'{self.currency} {new_currency}']  # Ищет в словаре валют нужную пару
-            self._balance /= exchange
-        except KeyError:
-            exchange = currencies[f'{new_currency} {self.currency}']
-            self._balance *= exchange
-
+        self._balance = exchanger(self._balance, self.currency, new_currency)
         self.currency = new_currency
         wallets_rewrite(id, self.name, self.currency, self._balance)
 
@@ -116,7 +114,6 @@ def wallets_rewrite(id: int, name: str, currency: str, balance: float):
     # Заменяем в строке нужную запись
     text_wallets = text_wallets.replace(text_wallets[index1:index2],
                                         f'{id},{name},{currency},{balance}')
-
     # Записываем обновлённую строку обратно в файл
     with open('wallets.csv', 'w', encoding='UTF-8') as file:
         file.write(text_wallets)
@@ -134,6 +131,37 @@ def currencies_reload():
     print('====== Курсы валют обновлены! ======\n')
     return exchange_rates
 
+def exchanger(amount: float, currency_from: str, currency_to: str):
+    """
+    Принимает сумму денег amount в валюте currency_from, меняет её по курсу и возвращает сумму денег в валюте currency_to
+    """
+    if currency_from == currency_to:
+        return amount
+    try:
+        exchange = currencies[f'{currency_from} {currency_to}']  # Ищет в словаре валют нужную пару
+        return amount / exchange
+    except KeyError:
+        exchange = currencies[f'{currency_to} {currency_from}']  # Если такого ключа в словаре валют нет, ищет наоборот
+        return amount * exchange
+
+def transfer_funds(amount: float, id_from: int, id_to: int):
+    """Отправляет деньги с кошелька id_from сумму num на кошелёк id_to.
+    Используется валюта кошелька id_from. Если валюты разные, осуществляется обмен по курсу и затем перевод.
+    После выполнения перевода обновляет данные о кошельках в CSV файле."""
+
+    # Уменьшение баланса счёта-отправителя
+    wallets[id_from].dec_balance(id_from, amount)
+
+    # Перевод суммы трансфера в валюту счёта-получателя
+    new_amount = exchanger(amount, wallets[id_from].get_currency(), wallets[id_to].get_currency())
+
+    # Увеличение баланса счёта-получателя
+    wallets[id_to].inc_balance(id_to, new_amount)
+
+    # Обновление записей в CSV файле
+    wallets_rewrite(id_from, *wallets[id_from].info())
+    wallets_rewrite(id_to, *wallets[id_to].info())
+
 
 # Обновляем данные о кошельках и курсах валют перед стартом программы
 wallets = wallets_reload()
@@ -142,10 +170,12 @@ currencies = currencies_reload()
 for i in wallets.keys():
     print(i, wallets[i].info())
 
-wallets[8].change_currency(8, '₽')
+transfer_funds(3, 9, 1)
 
 for i in wallets.keys():
     print(i, wallets[i].info())
+
+
 
 print('\n\n====== Конец программы ======\n\n\n')
 

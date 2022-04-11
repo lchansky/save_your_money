@@ -20,32 +20,32 @@ class Wallet:
         """
         self.name = name
         self.currency = currency
-        self.__balance = float(balance)
+        self._balance = float(balance)
 
     def delete(self):
         print(f'Кошелёк "{self.name}" удалён')
-        return self.__balance
+        return self._balance
 
     def info(self):
         """Возвращает инфу о счёте в виде кортежа (name, currency, balance)"""
-        return self.name, self.currency, self.__balance
+        return self.name, self.currency, self._balance
 
     def inc_balance(self, id: int, num: float):
         """Принимает int или float. Увеличивает баланс кошелька"""
-        self.__balance += float(num)
-        wallets_rewrite(id, self.name, self.currency, self.__balance)
+        self._balance += float(num)
+        wallets_rewrite(id, self.name, self.currency, self._balance)
         return num
 
     def dec_balance(self, id: int, num: float):
         """Принимает int или float. Уменьшает баланс кошелька"""
-        if self.__balance - num < 0:
+        if self._balance - num < 0:
             print(
                 f"""Ошибка при уменьшении баланса кошелька. Недостаточно средств. 
-                \r(Не хватает {num - self.__balance} {self.currency})""")
+                \r(Не хватает {num - self._balance} {self.currency})""")
             raise ValueError('Недостаточно средств')
         else:
-            self.__balance -= num
-        wallets_rewrite(id, self.name, self.currency, self.__balance)
+            self._balance -= num
+        wallets_rewrite(id, self.name, self.currency, self._balance)
         return num
 
     def add_to_db(self):
@@ -57,31 +57,26 @@ class Wallet:
 
         # Запись строки кошелька с новым id в файл
         with open('wallets.csv', 'a', encoding='UTF-8') as file:
-            file.write(f'\n{wallet_id},{self.name},{self.currency},{self.__balance}')
+            file.write(f'\n{wallet_id},{self.name},{self.currency},{self._balance}')
 
     def change_currency(self, id: int, new_currency: str):
         """Меняет валюту кошелька и переводит деньги по курсу. Вызывает wallets_rewrite() для замены записи в CSV файле
         Принимает id кошелька и новая валюта (str), возвращает новый баланс."""
 
         if new_currency == self.currency:  # Если новая валюта = старая валюта, то просто возвращает баланс
-            return self.__balance
+            return self._balance
 
         try:
             exchange = currencies[f'{self.currency} {new_currency}']  # Ищет в словаре валют нужную пару
-            self.__balance /= exchange
+            self._balance /= exchange
         except KeyError:
             exchange = currencies[f'{new_currency} {self.currency}']
-            self.__balance *= exchange
-
-        """
-        ЕСЛИ НЕ НАШЁЛ ПАРУ 'СТАРАЯ_ВАЛЮТА НОВАЯ_ВАЛЮТА', 
-        ТО ИСКАТЬ НАОБОРОТ, И НЕ ДЕЛИТЬ А УМНОЖАТЬ
-        """
+            self._balance *= exchange
 
         self.currency = new_currency
-        wallets_rewrite(id, self.name, self.currency, self.__balance)
+        wallets_rewrite(id, self.name, self.currency, self._balance)
 
-        return self.__balance
+        return self._balance
 
     def change_name(self, id: int, new_name: str):
         """Меняет название кошелька. Вызывает wallets_rewrite() для замены записи в CSV файле
@@ -90,7 +85,7 @@ class Wallet:
             pass
 
         self.name = new_name
-        wallets_rewrite(id, self.name, self.currency, self.__balance)
+        wallets_rewrite(id, self.name, self.currency, self._balance)
 
 
 def wallets_reload():
@@ -147,7 +142,7 @@ currencies = currencies_reload()
 for i in wallets.keys():
     print(i, wallets[i].info())
 
-wallets[7].change_currency(7, '₽')
+wallets[8].change_currency(8, '₽')
 
 for i in wallets.keys():
     print(i, wallets[i].info())

@@ -125,9 +125,9 @@ def wallets_reload():
     print('\n====== Обновление данных о счетах... ==========')
     with open('wallets.csv', encoding='UTF-8') as file:
         for i in file.readlines():
-            par = i.strip().split(',')
-            w[int(par[0])] = Wallet(*tuple(par[1:]))
-            print(f'Счёт id: {par[0]} загружен: {w[int(par[0])].info()}')
+            params = i.strip().split(',')
+            w[int(params[0])] = Wallet(*tuple(params[1:]))
+            print(f'Счёт id: {params[0]} загружен: {w[int(params[0])].info()}')
     print('====== Данные о кошельках обновлены! ==========\n')
     return w
 

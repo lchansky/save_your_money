@@ -59,11 +59,9 @@ class Transfer(Category):
 
 
 """
-Как я вижу это всё:
 Есть функция которая создаёт файл CSV и записывает туда дефолтные категории.
 Если этот файл уже существует, то он читает оттуда данные и создаёт два списка, выглядящие примерно так:
 pay_categories = [Объекты класса Pay], earn_categories = [Объекты класса Earn].
-Методы класса Category: 
 """
 
 def categories_reload():
@@ -95,8 +93,25 @@ def categories_reload():
     print('====== Данные о категориях загружены! ==========\n')
     return pay_list, earn_list
 
-def categories_rewrite():
-    pass
+def categories_rewrite(type: str, name: str):
+    """Открывает файл CSV и заменяет в нём 1 строку с указанными параметрами"""
+
+    # Читаем из CSV данные в строку
+    with open('wallets.csv', encoding='UTF-8') as file:
+        text_wallets = file.read()
+
+    # Находим индекс начала строки по id
+    index1 = text_wallets.find(f'\n{id},') + 1
+    # Находим индекс конца строки (Поиск находит первый перенос строки, начиная index1)
+    index2 = text_wallets.find('\n', index1)
+
+    # Заменяем в тексте нужную запись (строку)
+    text_wallets = text_wallets.replace(text_wallets[index1:index2], f'{id},{name},{currency},{balance}')
+
+    # Записываем обновлённый текст обратно в файл
+    with open('wallets.csv', 'w', encoding='UTF-8') as file:
+        file.write(text_wallets)
+    print(f'wallets.csv: Строка с id={id} успешно отредактирована!')
 
 def find_in_db(type, request):
     """Ищет в CSV файле строку request, например 'pay,Продукты\n'. При нахождении возвращает номер строки в файле.
@@ -108,9 +123,10 @@ def find_in_db(type, request):
         return -1
 
 pay_categories, earn_categories = categories_reload()
-print([i.get_name() for i in pay_categories],
-      [i.get_name() for i in earn_categories], sep='\n')
+print('Расходные категории:', [i.get_name() for i in pay_categories],
+      'Доходные категории:', [i.get_name() for i in earn_categories], sep='\n')
 
 pay_categories[2].change_name('Кафе2')
 print([i.get_name() for i in pay_categories],
       [i.get_name() for i in earn_categories], sep='\n')
+

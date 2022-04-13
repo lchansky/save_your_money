@@ -203,14 +203,6 @@ for i in wallets.keys():
     print(i, wallets[i].info())
 print()
 
-wallets[8].delete(8, 3)
-
-print()
-for i in wallets.keys():
-    print(i, wallets[i].info())
-
-
-print('\n\n====== Конец программы ======\n\n')
 
 
 

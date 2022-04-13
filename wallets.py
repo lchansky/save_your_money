@@ -63,7 +63,7 @@ class Wallet:
             file.write(f'{wallet_id},{self.name},{self.currency},{self._balance}\n')
         print(f'wallets.csv: Добавлена запись - {wallet_id},{self.name},{self.currency},{self._balance}\\n')
 
-    def delete(self, id: int, id2 = -1):
+    def delete(self, id: int, id2=-1):
         """Удаляет кошелёк id из CSV файла, переводит деньги на кошелёк id2 (по умолчанию деньги уничтожаются)"""
 
         print(f'====== Запущено удаление кошелька id={id} ======')
@@ -131,6 +131,7 @@ def wallets_reload():
     print('====== Данные о кошельках обновлены! ==========\n')
     return w
 
+
 def wallets_rewrite(id: int, name: str, currency: str, balance: float):
     """Открывает файл CSV и заменяет в нём 1 строку с указанными параметрами"""
 
@@ -151,6 +152,7 @@ def wallets_rewrite(id: int, name: str, currency: str, balance: float):
         file.write(text_wallets)
     print(f'wallets.csv: Строка с id={id} успешно отредактирована!')
 
+
 def currencies_reload():
     """Загружает курсы валют из CSV файла. Возвращает словарь {currency1-currency2 (str): exchange rate (float), ...}"""
 
@@ -161,6 +163,7 @@ def currencies_reload():
             exchange_rates[i.strip().split(',')[0]] = float(i.strip().split(',')[1])
     print('====== Курсы валют обновлены! ======\n')
     return exchange_rates
+
 
 def exchanger(amount: float, currency_from: str, currency_to: str):
     """
@@ -175,12 +178,14 @@ def exchanger(amount: float, currency_from: str, currency_to: str):
         exchange = currencies[f'{currency_to} {currency_from}']  # Если такого ключа в словаре валют нет, ищет наоборот
         return amount * exchange
 
+
 def transfer_funds(amount: float, id_from: int, id_to: int):
     """Отправляет деньги с кошелька id_from сумму num на кошелёк id_to.
     Используется валюта кошелька id_from. Если валюты разные, осуществляется обмен по курсу и затем перевод.
     После выполнения перевода обновляет данные о кошельках в CSV файле."""
 
-    if amount == 0:
+    if amount <= 0:
+        print('Ошибка при переводе средств. Сумма перевода не может быть меньше или равна нулю. Ваша сумма:', amount)
         return None
 
     # Уменьшение баланса счёта-отправителя
@@ -199,10 +204,7 @@ def transfer_funds(amount: float, id_from: int, id_to: int):
 wallets = wallets_reload()
 currencies = currencies_reload()
 
-for i in wallets.keys():
-    print(i, wallets[i].info())
-print()
-
-
-
+# for i in wallets.keys():
+#     print(i, wallets[i].info())
+# print()
 

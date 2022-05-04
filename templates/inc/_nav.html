@@ -1,0 +1,79 @@
+
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        
+        <a class="navbar-brand" href="{% url 'home' %}">
+            <div class="btn btn-outline-primary">
+                <div class="font-monospace fs-4">
+                    Save Your Money!
+                </div>
+            </div>
+        </a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+    
+                <li class="nav-item dropdown">
+                    <a class="nav-link active dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Операции
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li><a class="dropdown-item" href="{% url 'home' %}">Все операции</a></li>
+                        <li><a class="dropdown-item" href="#">Расходы</a></li>
+                        <li><a class="dropdown-item" href="#">Доходы</a></li>
+                        <li><a class="dropdown-item" href="#">Переводы</a></li>
+                        
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#">Добавить операцию</a></li>
+                    </ul>
+                </li>
+                
+                <li class="nav-item dropdown">
+                    <a class="nav-link active dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Счета
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        {% for item in wallets %}
+                            <li><a class="dropdown-item" href="#">Тут название счёта</a></li>
+                        {% endfor %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#">Создать новый счёт</a></li>
+                    </ul>
+                </li>
+                
+                <li class="nav-item dropdown">
+                    <a class="nav-link active dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Категории
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+    
+                        <li><a class="dropdown-item" href="#">Расходные</a></li>
+                        <li><a class="dropdown-item" href="#">Доходные</a></li>
+    
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#">Создать новую категорию</a></li>
+                    </ul>
+                </li>
+                
+                <li class="nav-item"><a class="nav-link active" aria-current="page" href="#">Анализ</a></li>
+                <li class="nav-item"><a class="nav-link active" aria-current="page" href="#">Бюджет</a></li>
+                <li class="nav-item"><a class="nav-link active" aria-current="page" href="#">Настройки</a></li>
+            </ul>
+            <span class="navbar-text">
+            {% if request.user.is_authenticated %}
+                Добро пожаловать, {{ user.username }}.
+                
+                <a href="#" class="btn btn-outline-danger">Выход</a>
+            {% else %}
+                <a href="{% url 'register' %}" class="btn btn-outline-success">Регистрация</a>
+                <a href="{% url 'login' %}" class="btn btn-outline-secondary">Вход</a>
+            {% endif %}
+            </span>
+        </div>
+    </div>
+</nav>

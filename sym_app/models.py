@@ -66,10 +66,18 @@ class Currency(models.Model):
     name = models.CharField(max_length=20, verbose_name='Валюта')
     exchange_to = models.CharField(max_length=20, verbose_name='Валюта для обмена')
     exchange_rate = models.FloatField(verbose_name='Курс валюты')
+    
+    def __str__(self):
+        return self.name
+    
+    class Meta:
+        verbose_name = 'Валюта'
+        verbose_name_plural = 'Валюты'
+        ordering = ['id']
 
 
 # class UserSettings(models.Model):
-#     user_id = models.ForeignKey('User', on_delete=models.CASCADE, verbose_name='ID пользователя')
+#     # user_id = models.ForeignKey('User', on_delete=models.CASCADE, verbose_name='ID пользователя')
 #     main_currency = models.ForeignKey('Currency', default=1, on_delete=models.PROTECT)
 #     budget = models.BooleanField(blank=True, default=False)
     

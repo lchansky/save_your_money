@@ -1,10 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Список операций</title>
-</head>
-<body>
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }} - {{ block.super }}
+{% endblock %}
+
+{% block content %}
 (тут должен быть список операций, но для теста вывожу сюда список валют)
 
 Список операций:
@@ -13,5 +13,4 @@
 <p> Валюта № {{ item.pk }} - Название: {{ item.name }} - Курс обмена к рублю РФ: {{ item.exchange_rate }}
 {% endfor %}
 
-</body>
-</html>
+{% endblock %}

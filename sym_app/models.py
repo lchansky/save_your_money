@@ -1,4 +1,7 @@
 from django.db import models
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 """
     ЗДЕСЬ В АТРИБУТАХ МОДЕЛЕЙ, ГДЕ ЕСТЬ ForeignKey МОЖНО ПОПРОБОВАТЬ ЮЗАТЬ
@@ -7,78 +10,154 @@ from django.db import models
 """
 
 
-# class Wallet(models.Model):
-#     user_id = models.ForeignKey('User', on_delete=models.CASCADE, verbose_name='ID пользователя')
-#     name = models.CharField(max_length=150, verbose_name='Название счёта')
-#     balance = models.FloatField(default=0)
-#     currency = models.ForeignKey('Currency', verbose_name='ID валюты', on_delete=models.PROTECT)
-#     is_archive = models.BooleanField(verbose_name='Архивный счёт?')
-#
-#
-# class Category(models.Model):
-#     user_id = models.ForeignKey('User', on_delete=models.CASCADE, verbose_name='ID пользователя')
-#     name = models.CharField(max_length=150, verbose_name='Название категории')
-#     type_of = models.CharField(max_length=10, verbose_name='Тип категории')
-#     is_budget = models.BooleanField(verbose_name='Бюджет вкл./выкл.', default=False)
-#     budget_amount = models.FloatField(verbose_name='Размер бюджета')
-#     is_archive = models.BooleanField(verbose_name='Архивная категория?', default=False)
-#
-#
-# class Operation(models.Model):
-#     user_id = models.ForeignKey(
-#         'User', verbose_name='ID пользователя', on_delete=models.CASCADE)
-#
-#     updated_at = models.DateTimeField(
-#         verbose_name='Дата и время операции')
-#
-#     from_wallet_id = models.ForeignKey(
-#         'Wallet',
-#         verbose_name='ID счёта списания',
-#         on_delete=models.CASCADE)
-#
-#     to_category_id = models.ForeignKey(
-#         'Category',
-#         verbose_name='ID категории',
-#         on_delete=models.CASCADE)
-#
-#     to_wallet_id = models.ForeignKey(
-#         'Wallet',
-#         verbose_name='ID счёта получения',
-#         on_delete=models.CASCADE,
-#         blank=True,
-#         default=None)
-#
-#     currency1 = models.ForeignKey(
-#         'Currency', verbose_name='ID валюты списания', on_delete=models.PROTECT)
-#
-#     currency2 = models.ForeignKey(
-#         'Currency', verbose_name='ID валюты списания', on_delete=models.PROTECT, default=currency1)
-#
-#     description = models.CharField(
-#         max_length=150, verbose_name='Описание операции')
-#
-#
-# class User(models.Model):
-#     pass
-
-
 class Currency(models.Model):
     name = models.CharField(max_length=20, verbose_name='Валюта')
     exchange_to = models.CharField(max_length=20, verbose_name='Валюта для обмена')
     exchange_rate = models.FloatField(verbose_name='Курс валюты')
-    
+
     def __str__(self):
         return self.name
-    
+
     class Meta:
         verbose_name = 'Валюта'
         verbose_name_plural = 'Валюты'
         ordering = ['id']
 
 
-# class UserSettings(models.Model):
-#     # user_id = models.ForeignKey('User', on_delete=models.CASCADE, verbose_name='ID пользователя')
-#     main_currency = models.ForeignKey('Currency', default=1, on_delete=models.PROTECT)
-#     budget = models.BooleanField(blank=True, default=False)
+class Wallet(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь')
+    name = models.CharField(max_length=150, verbose_name='Название счёта')
+    balance = models.FloatField(default=0)
+    currency = models.ForeignKey('Currency', verbose_name='ID валюты', on_delete=models.PROTECT)
+    is_archive = models.BooleanField(verbose_name='Архивный счёт?', blank=True, default=False)
+    
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = 'Счёт'
+        verbose_name_plural = 'Счета'
+        ordering = ['user', 'pk']
+
+
+class Category(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь', blank=True)
+    name = models.CharField(max_length=150, verbose_name='Название категории')
+    type_of = models.CharField(max_length=10, verbose_name='Тип категории')
+    is_budget = models.BooleanField(verbose_name='Бюджет вкл./выкл.', blank=True, default=False)
+    budget_amount = models.FloatField(verbose_name='Размер бюджета', blank=True, default=0)
+    is_archive = models.BooleanField(verbose_name='Архивная категория?', blank=True, default=False)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = 'Категория'
+        verbose_name_plural = 'Категории'
+        ordering = ['user', 'pk']
+
+
+class Operation(models.Model):
+    user = models.OneToOneField(User, verbose_name='Пользователь', on_delete=models.CASCADE)
+    
+    updated_at = models.DateTimeField(verbose_name='Дата и время операции')
+    
+    from_wallet_id = models.ForeignKey('Wallet',
+                                       verbose_name='ID счёта списания',
+                                       on_delete=models.CASCADE,
+                                       related_name='from_wallet')
+    
+    category_id = models.ForeignKey('Category',
+                                    verbose_name='ID категории',
+                                    on_delete=models.CASCADE)
+    
+    to_wallet_id = models.ForeignKey('Wallet',
+                                     verbose_name='ID счёта получения',
+                                     on_delete=models.CASCADE,
+                                     blank=True,
+                                     default=None,
+                                     related_name='to_wallet',
+                                     null=True)
+    
+    currency1 = models.ForeignKey('Currency',
+                                  verbose_name='ID валюты списания',
+                                  on_delete=models.PROTECT,
+                                  related_name='currency1')
+    
+    amount1 = models.FloatField(verbose_name='Сумма списания')
+    
+    currency2 = models.ForeignKey('Currency',
+                                  verbose_name='ID валюты платежа',
+                                  on_delete=models.PROTECT,
+                                  blank=True,
+                                  default=None,
+                                  related_name='currency2')
+    
+    amount2 = models.FloatField(verbose_name='Сумма платежа')
+
+    description = models.CharField(max_length=150, verbose_name='Описание операции', blank=True)
+    
+    def __str__(self):
+        return f'Операция {self.pk} пользователя {self.user}'
+
+    class Meta:
+        verbose_name = 'Операция'
+        verbose_name_plural = 'Операции'
+        ordering = ['pk']
+
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name='Пользователь')
+    name = models.CharField(max_length=30, verbose_name='Имя', blank=True)
+    main_currency = models.ForeignKey('Currency', default=1, on_delete=models.PROTECT)
+    budget = models.BooleanField(blank=True, default=False)
+
+    def __str__(self):
+        return self.objects.get(pk=self.kwargs['user'])
+
+    class Meta:
+        verbose_name = 'Настройки пользователя'
+        verbose_name_plural = 'Настройки пользователей'
+        ordering = ['user']
+
+
+class DefaultCategories(models.Model):
+    category_type_of = models.CharField(max_length=10, verbose_name='Тип')
+    category_name = models.CharField(max_length=150, verbose_name='Название')
+    
+    class Meta:
+        verbose_name = 'Дефолтные категории'
+        verbose_name_plural = 'Дефолтные категории'
+        ordering = ['category_type_of', 'pk']
     
     
+class DefaultWallets(models.Model):
+    wallet_name = models.CharField(max_length=150, verbose_name='Название')
+
+    class Meta:
+        verbose_name = 'Дефолтные счета'
+        verbose_name_plural = 'Дефолтные счета'
+        ordering = ['wallet_name', 'pk']
+    
+
+@receiver(post_save, sender=User)
+def create_or_update_user_profile(sender, instance, created, **kwargs):
+    """Создаёт дефолтные категории, счета и настройки для пользователя сразу после регистрации"""
+    if created:
+        Profile.objects.create(user=instance)
+        for i in DefaultCategories.objects.all():
+            Category.objects.create(user=instance, name=i.category_name, type_of=i.category_type_of)
+        for i in DefaultWallets.objects.all():
+            Wallet.objects.create(user=instance, name=i.wallet_name, currency=Currency.objects.get(pk=1))
+        # Вариант с добавлением первой операции
+        # wallet = Wallet.objects.create(user=instance, name='Наличные', currency=Currency.objects.get(pk=1))
+        # category = Category.objects.create(user=instance, name='Продукты', type_of='pay')
+        
+        # Operation.objects.create(user=instance,
+        #                          updated_at='2022-05-05 15:07',
+        #                          from_wallet_id=wallet,
+        #                          category_id=category,
+        #                          currency1=wallet.currency, amount1=50,
+        #                          currency2=wallet.currency, amount2=50,
+        #                          description='В шериф сгонял')
+    instance.profile.save()

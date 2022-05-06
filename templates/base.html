@@ -41,19 +41,11 @@
                     
                 {% endfor %}
             {% endif %}
-            
         
-            {% comment %}
-            {% if request.user.is_authenticated %}
-            {% endcomment %}
+            {% block content %}
+                CONTENT
+            {% endblock %}
         
-            {% block content %}CONTENT{% endblock %}
-        
-            {% comment %}
-            {% else %}
-                {% include 'inc/_about.html' %}
-            {% endif %}
-            {% endcomment %}
             
             
     </div>

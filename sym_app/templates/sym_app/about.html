@@ -1,10 +1,39 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }} - {{ block.super }}
+{% endblock %}
+
+{% block content %}
+<h2 align="center"><b>О проекте:</b></h2>
+
+<p>
+<h3>
+    <p>
+        Это веб-сайт, который поможет вам сохранить ваши деньги!
+        <br>Save Your Money покажет вам, на что на самом деле вы тратите деньги и поможет внедрить в жизнь привычку сбережения!
+    </p>
+    <p>
+        Написано для моего резюме на вакансию Junior Python-разработчика.
+    </p>
+</h3>
+<h5>
+    <p>
+        Использованные языки, технологии, сервисы и фреймворки:
+    <ul>
+        <li>Python 3.8</li>
+        <li>Django 4.0.4</li>
+        <li>HTML 5</li>
+        <li>SQL (SQLite 3)</li>
+        <li>Bootstrap</li>
+        <li>GitHub</li>
+    </ul>
+    </p>
+    
+    <p>Автор: Илья Липчанский</p>
+    <p>План разработки: 2 мая 2022 — 15 мая 2022</p>
+    Чтобы получить доступ к сайту, пожалуйста, <a href="{% url 'register' %}">зарегистрируйтесь</a> или <a href="{% url 'login' %}">авторизуйтесь.</a>
+</h5>
+</p>
+
+{% endblock %}

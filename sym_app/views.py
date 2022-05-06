@@ -1,44 +1,59 @@
+from django.http import request
 from django.shortcuts import render, redirect
-from django.http import HttpResponse, request
+from django.contrib.auth.models import User
 from django.views.generic import ListView
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
+from django.contrib.auth import login, logout
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 from .models import *
-
-
-# def auth_redirect(func):
-#     if request.user.is_authenticated():
-#         return redirect('home')
-#     else:
-#         return func
+from .forms import UserRegisterForm, UserLoginForm
 
 
 def about(request):
     print(request)
-    return render(request, 'base.html')
+    return render(request, 'sym_app/about.html', {'title': 'О проекте'})
 
 
-# @auth_redirect
+def user_logout(request):
+    logout(request)
+    return redirect('home')
+
+
 def register(request):
+    if request.user.is_authenticated:
+        return redirect('home')
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = UserRegisterForm(request.POST)
         if form.is_valid():
-            form.save()
+            user = form.save()
+            login(request, user)
             messages.success(request, 'Регистрация прошла успешно')
-            return redirect('login')
+            return redirect('home')
         else:
             messages.error(request, 'Ошибка регистрации')
     else:
-        form = UserCreationForm()
+        form = UserRegisterForm()
     return render(request, 'sym_app/register.html', {'form': form})
 
 
-def login(request):
-    return render(request, 'sym_app/login.html')
+def user_login(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+    if request.method == 'POST':
+        form = UserLoginForm(data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            return redirect('home')
+    else:
+        form = UserLoginForm()
+    return render(request, 'sym_app/login.html', {'form': form})
 
 
-class HomeOperations(ListView):
+class HomeOperations(LoginRequiredMixin, ListView):
+    redirect_field_name = None
+    login_url = 'about'
     model = Currency
     template_name = 'sym_app/home_operations.html'
     

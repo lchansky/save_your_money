@@ -5,7 +5,8 @@ urlpatterns = [
     path('', HomeOperations.as_view(), name='home'),
     path('operations/', HomeOperations.as_view(), name='operations'),
     path('register/', register, name='register'),
-    path('login/', login, name='login'),
+    path('login/', user_login, name='login'),
+    path('logout/', user_logout, name='logout'),
     
     path('about/', about, name='about'),
 ]

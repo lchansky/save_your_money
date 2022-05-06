@@ -11,7 +11,17 @@
 <form method="post">
     {% csrf_token %}
     {{ form.as_p }}
-    <button type="submit" class="btn btn-primary btn-block">Авторизация</button>
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <button type="submit" class="btn btn-primary btn-block">Авторизация</button>
+                Нет аккаунта?
+                <a href="{% url 'register' %}">Зарегистрироваться</a>
+            </div>
+        </div>
+    </div>
+
+    
 </form>
 
 {% endblock %}

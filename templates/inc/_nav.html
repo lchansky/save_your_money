@@ -68,7 +68,7 @@
             {% if request.user.is_authenticated %}
                 Добро пожаловать, {{ user.username }}.
                 
-                <a href="#" class="btn btn-outline-danger">Выход</a>
+                <a href="{% url 'logout' %}" class="btn btn-outline-danger">Выход</a>
             {% else %}
                 <a href="{% url 'register' %}" class="btn btn-outline-success">Регистрация</a>
                 <a href="{% url 'login' %}" class="btn btn-outline-secondary">Вход</a>

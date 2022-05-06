@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+from sym_app.utils import default_user_settings
+
 """
     ЗДЕСЬ В АТРИБУТАХ МОДЕЛЕЙ, ГДЕ ЕСТЬ ForeignKey МОЖНО ПОПРОБОВАТЬ ЮЗАТЬ
     related_name='name' ЧТОБЫ В ТАБЛИЦЕ-ПРЕДКЕ ПОЯВИЛОСЬ ПОЛЕ, В КОТОРОМ
@@ -140,24 +142,12 @@ class DefaultWallets(models.Model):
         ordering = ['wallet_name', 'pk']
     
 
+# Декоратор ресивер отлавливает изменения в модели User, встроенной в Джанго
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
-    """Создаёт дефолтные категории, счета и настройки для пользователя сразу после регистрации"""
+    """Если пользователь зарегистрировался - функция запускает создание для него
+    дефолтных параметров, категорий, счетов. Если произошли изменения в модели User
+    - то подтягивает изменения во все связанные кастомные модели"""
     if created:
-        Profile.objects.create(user=instance)
-        for i in DefaultCategories.objects.all():
-            Category.objects.create(user=instance, name=i.category_name, type_of=i.category_type_of)
-        for i in DefaultWallets.objects.all():
-            Wallet.objects.create(user=instance, name=i.wallet_name, currency=Currency.objects.get(pk=1))
-        # Вариант с добавлением первой операции
-        # wallet = Wallet.objects.create(user=instance, name='Наличные', currency=Currency.objects.get(pk=1))
-        # category = Category.objects.create(user=instance, name='Продукты', type_of='pay')
-        
-        # Operation.objects.create(user=instance,
-        #                          updated_at='2022-05-05 15:07',
-        #                          from_wallet_id=wallet,
-        #                          category_id=category,
-        #                          currency1=wallet.currency, amount1=50,
-        #                          currency2=wallet.currency, amount2=50,
-        #                          description='В шериф сгонял')
+        default_user_settings(instance)
     instance.profile.save()

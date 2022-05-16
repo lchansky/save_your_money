@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }} - {{ block.super }}
+{% endblock %}
+
+{% block content %}
+
+<p>
+Список операций:
+</p>
+
+{% for item in operations %}
+<p>
+    Операция № {{ item.pk }} - Пользователь: {{ item.user }} - Счёт списания: {{ item.from_wallet_id }}
+</p>
+{% endfor %}
+
+{% endblock %}

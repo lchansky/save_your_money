@@ -26,6 +26,7 @@
 
 <div class ="container mt-3">
     <div class="row">
+        <div class="mx-auto" style="width: 800px;">
             {% if messages %}
                 {% for message in messages %}
                     
@@ -45,9 +46,7 @@
             {% block content %}
                 CONTENT
             {% endblock %}
-        
-            
-            
+        </div>
     </div>
 </div>
 

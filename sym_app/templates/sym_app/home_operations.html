@@ -5,12 +5,23 @@
 {% endblock %}
 
 {% block content %}
-(тут должен быть список операций, но для теста вывожу сюда список валют)
 
-Список операций:
 
-{% for item in currencies %}
-<p> Валюта № {{ item.pk }} - Название: {{ item.name }} - Курс обмена к рублю РФ: {{ item.exchange_rate }}
-{% endfor %}
+
+<div class="mx-auto" style="width: 800px;">
+    <h1>{{ title }}</h1>
+    {% for item in operations %}
+        <p>
+            Операция № {{ item.pk }} - Пользователь: {{ item.user }} - Счёт списания: {{ item.from_wallet_id }}
+        </p>
+        <div class="card text-dark bg-light mb-5 w-100" style="max-width: 80rem;">
+            <div class="card-header">Header</div>
+            <div class="card-body">
+                <h5 class="card-title">Light card title</h5>
+                <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+            </div>
+        </div>
+    {% endfor %}
+</div>
 
 {% endblock %}

@@ -1,10 +1,69 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }} - {{ block.super }}
+{% endblock %}
+
+{% block content %}
+            <p>
+            <h1>{{ title }}</h1>
+            </p>
+            
+            <form action="{% url 'operation_new' %}" method="post">
+                
+                {% csrf_token %}
+                {{ form.as_p }}
+
+                <!-- !!!!!!!                Ручной вывод формы
+                
+                {% comment %}
+                {% for f in form %}
+                <p>
+                    {{ f.label }}
+                    {{ f }}
+                    {{ f.help_text }}
+                </p>
+                {% endfor %} 
+                {% endcomment %}-->
+                
+                <p>
+                    <button type="submit" class="btn btn-primary btn-block">Добавить операцию</button>
+                </p>
+            </form>
+            <script>
+                document.getElementById("id_currency1").value = {{ main_currency_id }};
+                document.getElementById("id_currency2").value = document.getElementById("id_currency1").value;
+                enable_or_disable_wallet2(document.getElementById("id_category_id").value);
+                same_or_not_currencies()
+
+                // Делает поле amount2 активным или неактивным, если произошло изменение в одной из валют.
+                // Если валюты разные, то поле amount2 активируется, а если одинаковые, то это поле не нужно
+                function same_or_not_currencies() {
+                    if ( document.getElementById("id_currency1").value === document.getElementById("id_currency2").value ) {
+                        document.getElementById("id_amount2").disabled = true;
+                        change_amount2_by_amount1();
+                    } else {
+                        document.getElementById("id_amount2").disabled = false;
+                    }
+                }
+
+                // Если валюты 1 и 2 одинаковые, то автоматически присваивает в amount2 значение amount1
+                function change_amount2_by_amount1() {
+                    if ( document.getElementById("id_currency1").value === document.getElementById("id_currency2").value ) {
+                        document.getElementById("id_amount2").value = document.getElementById("id_amount1").value
+                    }
+                }
+
+
+
+                // Активирует или деактивирует поле "to_wallet_id". 
+                // Если выбрана категория "Переводы", то активирует. Если другая, то деактивирует.
+                function enable_or_disable_wallet2(value) {
+                    if (Number(value) === {{ transfer_category_id }} ) {
+                        document.getElementById("id_to_wallet_id").disabled = false;
+                    } else {
+                        document.getElementById("id_to_wallet_id").disabled = true;
+                    }
+                }
+            </script>
+{% endblock %}

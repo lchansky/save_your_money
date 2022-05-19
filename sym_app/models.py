@@ -60,21 +60,21 @@ class Category(models.Model):
 
 
 class Operation(models.Model):
-    user = models.OneToOneField(User, verbose_name='Пользователь', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, verbose_name='Пользователь', on_delete=models.CASCADE)
     
     updated_at = models.DateTimeField(verbose_name='Дата и время операции')
     
     from_wallet_id = models.ForeignKey('Wallet',
-                                       verbose_name='ID счёта списания',
+                                       verbose_name='Счёт списания',
                                        on_delete=models.CASCADE,
                                        related_name='from_wallet')
     
     category_id = models.ForeignKey('Category',
-                                    verbose_name='ID категории',
+                                    verbose_name='Категория',
                                     on_delete=models.CASCADE)
     
     to_wallet_id = models.ForeignKey('Wallet',
-                                     verbose_name='ID счёта получения',
+                                     verbose_name='Счёт получения',
                                      on_delete=models.CASCADE,
                                      blank=True,
                                      default=None,
@@ -82,20 +82,22 @@ class Operation(models.Model):
                                      null=True)
     
     currency1 = models.ForeignKey('Currency',
-                                  verbose_name='ID валюты списания',
+                                  verbose_name='Валюта списания',
                                   on_delete=models.PROTECT,
                                   related_name='currency1')
     
     amount1 = models.FloatField(verbose_name='Сумма списания')
     
     currency2 = models.ForeignKey('Currency',
-                                  verbose_name='ID валюты платежа',
+                                  verbose_name='Валюта платежа',
                                   on_delete=models.PROTECT,
                                   blank=True,
                                   default=None,
                                   related_name='currency2')
     
-    amount2 = models.FloatField(verbose_name='Сумма платежа')
+    amount2 = models.FloatField(verbose_name='Сумма платежа',
+                                blank=True,
+                                default=None)
 
     description = models.CharField(max_length=150, verbose_name='Описание операции', blank=True)
     

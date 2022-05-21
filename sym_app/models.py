@@ -64,22 +64,25 @@ class Operation(models.Model):
     
     updated_at = models.DateTimeField(verbose_name='Дата и время операции')
     
-    from_wallet_id = models.ForeignKey('Wallet',
-                                       verbose_name='Счёт списания',
-                                       on_delete=models.CASCADE,
-                                       related_name='from_wallet')
+    from_wallet = models.ForeignKey('Wallet',
+                                    verbose_name='Счёт списания',
+                                    on_delete=models.CASCADE,
+                                    related_name='from_wallet',
+                                    db_column='from_wallet')
     
-    category_id = models.ForeignKey('Category',
+    category = models.ForeignKey('Category',
                                     verbose_name='Категория',
-                                    on_delete=models.CASCADE)
+                                    on_delete=models.CASCADE,
+                                    db_column='category')
     
-    to_wallet_id = models.ForeignKey('Wallet',
+    to_wallet = models.ForeignKey('Wallet',
                                      verbose_name='Счёт получения',
                                      on_delete=models.CASCADE,
                                      blank=True,
                                      default=None,
                                      related_name='to_wallet',
-                                     null=True)
+                                     null=True,
+                                     db_column='to_wallet')
     
     currency1 = models.ForeignKey('Currency',
                                   verbose_name='Валюта списания',
@@ -107,7 +110,7 @@ class Operation(models.Model):
     class Meta:
         verbose_name = 'Операция'
         verbose_name_plural = 'Операции'
-        ordering = ['pk']
+        ordering = ['-pk']
 
 
 class Profile(models.Model):

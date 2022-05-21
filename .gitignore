@@ -132,3 +132,5 @@ dmypy.json
 venv/
 .idea
 .idea/
+
+trash.py

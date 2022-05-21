@@ -38,8 +38,8 @@
                         Счета
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                        {% for item in wallets %}
-                            <li><a class="dropdown-item" href="#">Тут название счёта</a></li>
+                        {% for wallet in wallets %}
+                            <li><a class="dropdown-item" href="#">{{ wallet }}</a></li>
                         {% endfor %}
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="#">Создать новый счёт</a></li>

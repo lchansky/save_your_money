@@ -36,8 +36,8 @@ def default_user_settings(instance):
     # models.Operation.objects.create(
     #     user=instance,
     #     updated_at=datetime.now(),
-    #     from_wallet_id=models.Wallet.objects.get(user=instance, name='Карта'),
-    #     category_id=models.Category.objects.get(user=instance, name='Продукты'),
+    #     from_wallet=models.Wallet.objects.get(user=instance, name='Карта'),
+    #     category=models.Category.objects.get(user=instance, name='Продукты'),
     #     currency1=ruble, amount1=500,
     #     currency2=ruble, amount2=500,
     #     description='Первая операция!')

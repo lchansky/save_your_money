@@ -26,7 +26,7 @@ class CategoryAdmin(admin.ModelAdmin):
     
     
 class OperationAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'user', 'updated_at', 'from_wallet_id', 'category_id', 'to_wallet_id',
+    list_display = ('pk', 'user', 'updated_at', 'from_wallet', 'category', 'to_wallet',
                     'currency1', 'amount1', 'currency2', 'amount2', 'description')
     list_display_links = ('pk', 'updated_at')
     

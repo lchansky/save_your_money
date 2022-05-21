@@ -33,7 +33,7 @@
             <script>
                 document.getElementById("id_currency1").value = {{ main_currency_id }};
                 document.getElementById("id_currency2").value = document.getElementById("id_currency1").value;
-                enable_or_disable_wallet2(document.getElementById("id_category_id").value);
+                enable_or_disable_wallet2(document.getElementById("id_category").value);
                 same_or_not_currencies()
 
                 // Делает поле amount2 активным или неактивным, если произошло изменение в одной из валют.
@@ -56,13 +56,13 @@
 
 
 
-                // Активирует или деактивирует поле "to_wallet_id". 
+                // Активирует или деактивирует поле "to_wallet".
                 // Если выбрана категория "Переводы", то активирует. Если другая, то деактивирует.
                 function enable_or_disable_wallet2(value) {
-                    if (Number(value) === {{ transfer_category_id }} ) {
-                        document.getElementById("id_to_wallet_id").disabled = false;
+                    if (Number(value) === {{ transfer_category }} ) {
+                        document.getElementById("id_to_wallet").disabled = false;
                     } else {
-                        document.getElementById("id_to_wallet_id").disabled = true;
+                        document.getElementById("id_to_wallet").disabled = true;
                     }
                 }
             </script>

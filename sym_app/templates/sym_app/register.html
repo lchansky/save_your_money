@@ -8,20 +8,23 @@
 
 <h1>Регистрация</h1>
 
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <div class="container">
-        <div class="row">
-            <div class="col">
-                <button type="submit" class="btn btn-primary btn-block">Регистрация</button>
-                Уже зарегистрированы?
-                <a href="{% url 'login' %}"> Авторизоваться</a>
+
+<div class="text-start" style="max-width: 30rem;">
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="container">
+            <div class="row">
+                <div class="col">
+                    <div class="hstack gap-4">
+                        <button type="submit" class="btn btn-primary btn-block">Регистрация</button>
+                        <a href="{% url 'login' %}">Уже зарегистрированы? Авторизоваться</a>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-
-</form>
+    </form>
+</div>
 
 
 {% endblock %}

@@ -116,8 +116,8 @@ class Operation(models.Model):
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name='Пользователь')
     name = models.CharField(max_length=30, verbose_name='Имя', blank=True)
-    main_currency = models.ForeignKey('Currency', default=1, on_delete=models.PROTECT)
-    budget = models.BooleanField(blank=True, default=False)
+    main_currency = models.ForeignKey('Currency', default=1, on_delete=models.PROTECT, verbose_name='Основная валюта')
+    budget = models.BooleanField(blank=True, default=False, verbose_name='Режим "бюджет" (в разработке...)')
 
     def __str__(self):
         return self.objects.get(pk=self.kwargs['user'])

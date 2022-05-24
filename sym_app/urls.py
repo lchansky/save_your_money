@@ -3,9 +3,15 @@ from .views import *
 
 urlpatterns = [
     path('', HomeOperations.as_view(), name='home'),
-    path('operations/', operations, name='operations'),
+    path('operations/', HomeOperations.as_view(), name='operations'),
     path('operations/new/', operation_new, name='operation_new'),
     
+    path('wallets/', Wallets.as_view(), name='wallets'),
+    
+    path('categories/', Categories.as_view(), name='categories'),
+    
+    path('settings/', Settings.as_view(), name='settings'),
+    path('settings/<success>/', Settings.as_view(), name='settings'),
     
     path('register/', register, name='register'),
     path('login/', user_login, name='login'),

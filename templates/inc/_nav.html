@@ -23,10 +23,12 @@
                         Операции
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li><a class="dropdown-item" href="/operations/?type_of=pay">Расходы</a></li>
+                        <li><a class="dropdown-item" href="/operations/?type_of=earn">Доходы</a></li>
+                        <li><a class="dropdown-item" href="/operations/?type_of=transfer">Переводы</a></li>
+                        
+                        <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{% url 'home' %}">Все операции</a></li>
-                        <li><a class="dropdown-item" href="#">Расходы</a></li>
-                        <li><a class="dropdown-item" href="#">Доходы</a></li>
-                        <li><a class="dropdown-item" href="#">Переводы</a></li>
                         
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{% url 'operation_new' %}">Добавить операцию</a></li>
@@ -42,7 +44,9 @@
                             <li><a class="dropdown-item" href="#">{{ wallet }}</a></li>
                         {% endfor %}
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#">Создать новый счёт</a></li>
+                        <li><a class="dropdown-item" href="{% url 'wallets' %}">Все счета</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#">Добавить новый счёт</a></li>
                     </ul>
                 </li>
                 
@@ -56,22 +60,29 @@
                         <li><a class="dropdown-item" href="#">Доходные</a></li>
     
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#">Создать новую категорию</a></li>
+                        <li><a class="dropdown-item" href="{% url 'categories' %}">Все категории</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#">Добавить новую категорию</a></li>
                     </ul>
                 </li>
                 
                 <li class="nav-item"><a class="nav-link active" aria-current="page" href="#">Анализ</a></li>
                 <li class="nav-item"><a class="nav-link active" aria-current="page" href="#">Бюджет</a></li>
-                <li class="nav-item"><a class="nav-link active" aria-current="page" href="#">Настройки</a></li>
+                <li class="nav-item"><a class="nav-link active" aria-current="page" href="{% url 'settings' %}">Настройки</a></li>
             </ul>
             <span class="navbar-text">
             {% if request.user.is_authenticated %}
-                Добро пожаловать, {{ user.username }}.
-                
-                <a href="{% url 'logout' %}" class="btn btn-outline-danger">Выход</a>
+                <div class="hstack gap-3">
+                    <div class="fs-6">Добро пожаловать, {{ user.username }}. </div>
+                    <div class="vr"></div>
+                    <a href="{% url 'logout' %}" class="btn btn-outline-danger">Выход</a>
+                </div>
             {% else %}
-                <a href="{% url 'register' %}" class="btn btn-outline-success">Регистрация</a>
-                <a href="{% url 'login' %}" class="btn btn-outline-secondary">Вход</a>
+                <div class="hstack gap-3">
+                    <a href="{% url 'register' %}" class="btn btn-outline-success">Регистрация</a>
+                    <div class="vr"></div>
+                    <a href="{% url 'login' %}" class="btn btn-outline-secondary">Вход</a>
+                </div>
             {% endif %}
             </span>
         </div>

@@ -10,10 +10,17 @@
 Список операций:
 </p>
 
+{% if not operations %}
+<p>
+Здесь ничего нет. Добавьте первую операцию! (Операции >> Добавить операцию)
+</p>
+{% endif %}
+
 {% for item in operations %}
 <p>
     Операция № {{ item.pk }} - Пользователь: {{ item.user }} - Счёт списания: {{ item.from_wallet_id }}
 </p>
+{% eld %}
 {% endfor %}
 
 {% endblock %}

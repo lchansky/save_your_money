@@ -28,6 +28,17 @@ class UserRegisterForm(UserCreationForm):
         fields = ('username', 'email', 'password1', 'password2')
 
 
+class UserSettingsForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ('name', 'main_currency', 'budget')
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'main_currency': forms.Select(attrs={'class': 'form-select'}),
+            'budget': forms.CheckboxInput(attrs={'class': 'form-check-input'})
+        }
+
+
 class OperationNewForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
@@ -60,7 +71,7 @@ class OperationNewForm(forms.ModelForm):
         }
         
         help_texts = {
-            'to_wallet':  'Чтобы перевести деньги со счёта на счёт, выберите "Переводы"'
+            'to_wallet':  'Чтобы перевести деньги со счёта на счёт, выберите категорию "Переводы"'
         }
     
     # Кастомная валидация, срабатывает если указана категория "Перевод"

@@ -11,9 +11,8 @@
 <h1>{{ title }}</h1>
 {% for day, list_operations in operations_in_days.items %}
     <div class="card text-dark bg-light mb-5" style="max-width: 80rem;">
-        <div class="card-header fw-bold">{{ day }}</div>
+        <div class="card-header fw-bold text-start">{{ day }}</div>
             {% for operation in list_operations %}
-            <div class="list-group gy-5">
                 <a href="#" class="list-group-item list-group-item-action">
                     <div class="d-flex w-100 justify-content-between">
                         <div class="fs-4 fw-bold">{{ operation.category }}</div>
@@ -23,11 +22,14 @@
                         <p class="fs-5">{{ operation.from_wallet }}</p>
                         <small>{{ operation.updated_at|time }}</small>
                     </div>
-                    <small>{{ operation.description }}</small>
+                    <div class="text-start">{{ operation.description }}</div>
                 </a>
-            </div>
             {% endfor %}
     </div>
+{% empty %}
+<h5>
+Здесь ничего нет. Добавьте первую операцию!<br>(Операции >> Добавить операцию)
+</h5>
 {% endfor %}
 
 {% endblock %}

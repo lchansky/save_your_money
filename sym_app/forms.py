@@ -37,6 +37,9 @@ class UserSettingsForm(forms.ModelForm):
             'main_currency': forms.Select(attrs={'class': 'form-select'}),
             'budget': forms.CheckboxInput(attrs={'class': 'form-check-input'})
         }
+        labels = {
+            'name': 'Имя (отображается на панели навигации сверху)',
+        }
 
 
 class OperationNewForm(forms.ModelForm):
@@ -50,10 +53,10 @@ class OperationNewForm(forms.ModelForm):
         
     class Meta:
         model = Operation
-        fields = [
+        fields = (
             'updated_at', 'from_wallet', 'category', 'to_wallet',
             'currency1', 'amount1', 'currency2', 'amount2', 'description'
-        ]
+        )
         widgets = {
             'updated_at': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'from_wallet': forms.Select(attrs={'class': 'form-select'}),
@@ -87,6 +90,10 @@ class OperationNewForm(forms.ModelForm):
             data['to_wallet'] = None
     
         return data['to_wallet']
+
+
+class OperationEditForm(OperationNewForm):
+    pass
     
     
 

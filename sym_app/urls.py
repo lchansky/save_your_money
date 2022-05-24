@@ -5,6 +5,9 @@ urlpatterns = [
     path('', HomeOperations.as_view(), name='home'),
     path('operations/', HomeOperations.as_view(), name='operations'),
     path('operations/new/', operation_new, name='operation_new'),
+    path('operations/<int:pk>', OperationDetail.as_view(), name='operation_detail'),
+    path('operations/delete/<int:pk>', operation_delete, name='operation_delete'),
+    path('operations/edit/<int:operation_pk>', operation_edit, name='operation_edit'),
     
     path('wallets/', Wallets.as_view(), name='wallets'),
     

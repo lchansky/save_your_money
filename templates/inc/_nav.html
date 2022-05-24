@@ -73,7 +73,11 @@
             <span class="navbar-text">
             {% if request.user.is_authenticated %}
                 <div class="hstack gap-3">
-                    <div class="fs-6">Добро пожаловать, {{ user.username }}. </div>
+                    {% if optional_name %}
+                        <div class="fs-6">Добро пожаловать, {{ optional_name }}. </div>
+                    {% else %}
+                        <div class="fs-6">Добро пожаловать, {{ user.username }}. </div>
+                    {% endif %}
                     <div class="vr"></div>
                     <a href="{% url 'logout' %}" class="btn btn-outline-danger">Выход</a>
                 </div>

@@ -6,14 +6,14 @@ from django.core.exceptions import ValidationError
 from django.http import request
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
-from django.views.generic import ListView, CreateView, UpdateView, FormView, DetailView
+from django.views.generic import ListView, CreateView, UpdateView, FormView, DetailView, DeleteView
 from django.contrib import messages
 from django.contrib.auth import login, logout, get_user_model, get_user
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q, F
 
 from .models import *
-from .forms import UserRegisterForm, UserLoginForm, OperationNewForm, forms, UserSettingsForm
+from .forms import UserRegisterForm, UserLoginForm, OperationNewForm, forms, UserSettingsForm, OperationEditForm
 
 
 def about(request):
@@ -22,11 +22,13 @@ def about(request):
 
 
 def user_logout(request):
+    """Деавторизует пользователя. Редирект на home"""
     logout(request)
     return redirect('home')
 
 
 def register(request):
+    """Регистрирует пользователя"""
     if request.user.is_authenticated:
         return redirect('home')
     if request.method == 'POST':
@@ -72,7 +74,7 @@ class HomeOperations(LoginRequiredMixin, ListView):
         context['operations_in_days'] = self.get_operations_in_days()
         # context['sorting'] = self.sorting()
         context.update(universal_context(self.request))
-        print(self.sorting())
+        # print(self.sorting())
         return context
     
     def get_operations_in_days(self):
@@ -106,7 +108,74 @@ class HomeOperations(LoginRequiredMixin, ListView):
     
     def get_queryset(self):
         return Operation.objects.filter(self.sorting())
+    
+
+class OperationDetail(LoginRequiredMixin, DetailView):
+    redirect_field_name = None  # Для миксина LoginRequiredMixin
+    login_url = 'about'  # Для миксина LoginRequiredMixin
+    
+    model = Operation
+    template_name = 'sym_app/operation_detail.html'
+    context_object_name = 'operation'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(universal_context(self.request))
+        context['title'] = 'Детали операции'
+        return context
         
+
+@login_required(login_url='about')
+def operation_delete(request, pk):
+    Operation.objects.get(pk=pk).delete()
+    messages.success(request, 'Операция успешно удалена')
+    return redirect('home')
+
+
+@login_required(login_url='about')
+def operation_edit(request, operation_pk):
+    if request.method == 'POST':
+        form = OperationEditForm(data=request.POST, request=request)
+        if form.is_valid():
+            data = form.cleaned_data
+            data['user_id'] = request.user.id
+            if not data['currency2'] or not data['amount2']:
+                data['currency2'] = data['currency1']
+                data['amount2'] = data['amount1']
+            Operation.objects.filter(pk=operation_pk).update(**data)
+            operation = Operation.objects.get(pk=operation_pk)
+            print('Изменена операция:', operation)
+            messages.success(request, 'Изменения сохранены')
+            return redirect(operation.get_absolute_url())
+    else:
+        operation = Operation.objects.get(pk=operation_pk)
+        tz_delta = datetime.datetime.now() - datetime.datetime.utcnow()
+        form = OperationEditForm(request=request, initial={
+            'updated_at': (operation.updated_at + tz_delta).strftime('%Y-%m-%dT%H:%M'),
+            # HTML почему-то не принимает иные форматы времени. Прибавляю 3 часа, т.к. в cleaned_data время в UTC
+            'from_wallet': operation.from_wallet,
+            'category': operation.category,
+            'to_wallet': operation.to_wallet,
+            'currency1': operation.currency1,
+            'amount1': operation.amount1,
+            'currency2': operation.currency2,
+            'amount2': operation.amount2,
+            'description': operation.description,
+        })
+
+    context = {'form': form,
+               'title': 'Изменение операции',
+               'operation': operation,
+               'transfer_category': Category.objects.get(user=request.user, type_of='transfer').pk,
+               'main_currency_id': Currency.objects.get(name='RUB').pk,
+               # Здесь нужно будет в будущем отправить в контекст основную
+               # валюту пользователя, а не просто Рубль. Чтобы отображать
+               # расходы с разными валютами, в одной - основной валюте
+               }
+    context.update(universal_context(request))
+
+    return render(request, 'sym_app/operation_edit.html', context)
+
 
 @login_required(login_url='about')
 def operation_new(request):
@@ -125,21 +194,25 @@ def operation_new(request):
             return redirect('home')
     else:
         form = OperationNewForm(request=request)
-    return render(request,
-                  'sym_app/operation_new.html',
-                  {'form': form,
-                   'title': 'Добавление операции',
-                   'transfer_category': Category.objects.get(user=request.user, type_of='transfer').pk,
-                   'main_currency_id': Currency.objects.get(name='RUB').pk,
-                   # Здесь нужно будет в будущём отправить в контекст основную валюту пользователя, а не просто Рубль. Чтобы отображать расходы с разными валютами, в одной - основной валюте
-                   }
-                  )
+    
+    context = {'form': form,
+               'title': 'Добавление операции',
+               'transfer_category': Category.objects.get(user=request.user, type_of='transfer').pk,
+               'main_currency_id': Currency.objects.get(name='RUB').pk,
+               # Здесь нужно будет в будущем отправить в контекст основную
+               # валюту пользователя, а не просто Рубль. Чтобы отображать
+               # расходы с разными валютами, в одной - основной валюте
+               }
+    context.update(universal_context(request))
+    
+    return render(request, 'sym_app/operation_new.html', context)
 
 
 def universal_context(request):
     """Принимает запрос и контекст, добавляет к контексту те переменные, которые используются на каждой странице.
     Например, на navbar используется"""
     extra_context = {}
+    extra_context['optional_name'] = Profile.objects.get(user=request.user).name
     extra_context['wallets'] = Wallet.objects.filter(user=request.user)
     return extra_context
 
@@ -212,3 +285,4 @@ class Settings(LoginRequiredMixin, UpdateView):
     
     def get_object(self, queryset=None):
         return Profile.objects.get(user=self.request.user)
+    

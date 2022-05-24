@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.urls import reverse
 
 from sym_app.utils import default_user_settings
 
@@ -71,18 +72,18 @@ class Operation(models.Model):
                                     db_column='from_wallet')
     
     category = models.ForeignKey('Category',
-                                    verbose_name='Категория',
-                                    on_delete=models.CASCADE,
-                                    db_column='category')
+                                 verbose_name='Категория',
+                                 on_delete=models.CASCADE,
+                                 db_column='category')
     
     to_wallet = models.ForeignKey('Wallet',
-                                     verbose_name='Счёт получения',
-                                     on_delete=models.CASCADE,
-                                     blank=True,
-                                     default=None,
-                                     related_name='to_wallet',
-                                     null=True,
-                                     db_column='to_wallet')
+                                  verbose_name='Счёт получения',
+                                  on_delete=models.CASCADE,
+                                  blank=True,
+                                  default=None,
+                                  related_name='to_wallet',
+                                  null=True,
+                                  db_column='to_wallet')
     
     currency1 = models.ForeignKey('Currency',
                                   verbose_name='Валюта списания',
@@ -106,6 +107,9 @@ class Operation(models.Model):
     
     def __str__(self):
         return f'Операция {self.pk} пользователя {self.user}'
+    
+    def get_absolute_url(self):
+        return reverse('operation_detail', kwargs={'pk': self.pk})
 
     class Meta:
         verbose_name = 'Операция'

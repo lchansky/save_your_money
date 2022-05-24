@@ -13,7 +13,7 @@
     <div class="card text-dark bg-light mb-5" style="max-width: 80rem;">
         <div class="card-header fw-bold text-start">{{ day }}</div>
             {% for operation in list_operations %}
-                <a href="#" class="list-group-item list-group-item-action">
+                <a href="{{ operation.get_absolute_url }}" class="list-group-item list-group-item-action">
                     <div class="d-flex w-100 justify-content-between">
                         <div class="fs-4 fw-bold">{{ operation.category }}</div>
                         <div class="fs-4">{% if operation.category.type_of == 'pay' %}-{% endif %}{% if operation.category.type_of == 'earn' %}+{% endif %}{{ operation.amount1 }} {{ operation.currency1 }}</div>

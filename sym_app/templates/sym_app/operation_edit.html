@@ -9,27 +9,17 @@
             <h1>{{ title }}</h1>
             </p>
             
-            <form action="{% url 'operation_new' %}" method="post" class="text-start">
+            <form action="{% url 'operation_edit' operation.pk %}" method="post" class="text-start">
                 
                 {% csrf_token %}
                 {{ form.as_p }}
-
-                <!-- !!!!!!!     Ручной вывод формы
-                
-                {% comment %}
-                {% for f in form %}
-                <p>
-                    {{ f.label }}
-                    {{ f }}
-                    {{ f.help_text }}
-                </p>
-                {% endfor %} 
-                {% endcomment %}  -->
                 
                 <p>
-                    <button type="submit" class="btn btn-primary btn-block">Добавить операцию</button>
+                    <button type="submit" value="Update" class="btn btn-primary btn-block">Сохранить</button>
                 </p>
             </form>
+
+            {% comment %}
             <script>
                 document.getElementById("id_currency1").value = {{ main_currency_id }};
                 document.getElementById("id_currency2").value = document.getElementById("id_currency1").value;
@@ -66,4 +56,5 @@
                     }
                 }
             </script>
+            {% endcomment %}
 {% endblock %}

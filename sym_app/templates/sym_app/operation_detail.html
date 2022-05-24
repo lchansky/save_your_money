@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }} - {{ block.super }}
+{% endblock %}
+
+{% block content %}
+
+
+<h1 xmlns="http://www.w3.org/1999/html">{{ title }}</h1>
+<br>
+<div class="list-group-item list-group-item text-start fs-4" style="max-width:500px;">
+    
+    <table class="table">
+        <tbody>
+        <tr>
+            <td>Дата и время</td>
+            <td class="fs-5"><a href="#">{{ operation.updated_at|date }}</a> {{ operation.updated_at|time }}</td>
+        </tr>
+        <tr>
+            <td>Категория</td>
+            <td class="fs-5"><a href="#">{{ operation.category }}</a></td>
+        </tr>
+        <tr>
+            <td>Со счёта</td>
+            <td class="fs-5"><a href="/?wallet={{ operation.from_wallet.pk }}">{{ operation.from_wallet }}</a></td>
+        </tr>
+        
+        {% if operation.to_wallet %}
+            <tr>
+                <td>На счёт</td>
+                <td class="fs-5"><a href="/?wallet={{ operation.to_wallet.pk }}">{{ operation.to_wallet }}</a></td>
+            </tr>
+        {% endif %}
+        
+        <tr>
+            <td>Сумма списания</td>
+            <td class="fs-5">{{ operation.amount1 }} {{ operation.currency1 }}</td>
+        </tr>
+        
+        {% if operation.currency1 != operation.currency2 %}
+            <tr>
+                <td>Сумма платежа</td>
+                <td class="fs-5">{{ operation.amount2 }} {{ operation.currency2 }}</td>
+            </tr>
+        {% endif %}
+        
+        <tr>
+            <td>Описание</td>
+            <td class="fs-5">{{ operation.description }}</td>
+        </tr>
+        
+    </table>
+    
+    <div class="hstack gap-3">
+        <a href="{% url 'operation_edit' operation.pk %}" class="col btn btn-outline-primary btn-lg">Редактировать</a>
+        <div class="vr"></div>
+        <button class="col btn btn-outline-danger btn-lg" onclick="delete_item()">Удалить</button>
+    </div>
+    
+    <script>
+    function delete_item() {
+        var x
+        x = confirm('Вы уверены, что хотите удалить операцию?');
+        if (x) {
+            location="/operations/delete/{{ operation.pk }}";
+        }
+    }
+  </script>
+</div>
+
+
+
+{% endblock %}

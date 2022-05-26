@@ -41,7 +41,7 @@
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                         {% for wallet in wallets %}
-                            <li><a class="dropdown-item" href="#">{{ wallet }}</a></li>
+                            <li><a class="dropdown-item" href="{{ wallet.get_absolute_url }}">{{ wallet }}</a></li>
                         {% endfor %}
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{% url 'wallets' %}">Все счета</a></li>

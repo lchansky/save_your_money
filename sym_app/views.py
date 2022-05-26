@@ -1,5 +1,7 @@
 import datetime
 from pprint import pprint
+import pytz
+from pytz import UTC
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
@@ -12,8 +14,9 @@ from django.contrib.auth import login, logout, get_user_model, get_user
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q, F
 
+from sym_django.settings import TIME_ZONE
 from .models import *
-from .forms import UserRegisterForm, UserLoginForm, OperationNewForm, forms, UserSettingsForm, OperationEditForm
+from .forms import *
 
 
 def about(request):
@@ -133,7 +136,10 @@ def operation_delete(request, pk):
 
 
 @login_required(login_url='about')
-def operation_edit(request, operation_pk):
+def operation_edit(request, pk):
+    
+    operation = Operation.objects.get(pk=pk)
+    
     if request.method == 'POST':
         form = OperationEditForm(data=request.POST, request=request)
         if form.is_valid():
@@ -142,17 +148,16 @@ def operation_edit(request, operation_pk):
             if not data['currency2'] or not data['amount2']:
                 data['currency2'] = data['currency1']
                 data['amount2'] = data['amount1']
-            Operation.objects.filter(pk=operation_pk).update(**data)
-            operation = Operation.objects.get(pk=operation_pk)
+            Operation.objects.filter(pk=pk).update(**data)
             print('Изменена операция:', operation)
             messages.success(request, 'Изменения сохранены')
             return redirect(operation.get_absolute_url())
     else:
-        operation = Operation.objects.get(pk=operation_pk)
-        tz_delta = datetime.datetime.now() - datetime.datetime.utcnow()
+        # Добавляю дельту таймзоны, т.к. в БД время в UTC.
+        dt = operation.updated_at.astimezone(tz=pytz.timezone(TIME_ZONE))
+        
         form = OperationEditForm(request=request, initial={
-            'updated_at': (operation.updated_at + tz_delta).strftime('%Y-%m-%dT%H:%M'),
-            # HTML почему-то не принимает иные форматы времени. Прибавляю 3 часа, т.к. в cleaned_data время в UTC
+            'updated_at': dt.strftime('%Y-%m-%dT%H:%M'),  # HTML понимает только формат времени 'yyyy-mm-ddThh:mm'
             'from_wallet': operation.from_wallet,
             'category': operation.category,
             'to_wallet': operation.to_wallet,
@@ -233,6 +238,45 @@ class Wallets(LoginRequiredMixin, ListView):
     
     def get_queryset(self):
         return Wallet.objects.filter(user=self.request.user)
+
+
+class WalletDetail(LoginRequiredMixin, DetailView):
+    redirect_field_name = None  # Для миксина LoginRequiredMixin
+    login_url = 'about'  # Для миксина LoginRequiredMixin
+    
+    model = Wallet
+    template_name = 'sym_app/wallet_detail.html'
+    context_object_name = 'wallet'
+    
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(universal_context(self.request))
+        context['title'] = 'Детали кошелька'
+        return context
+
+
+@login_required(login_url='about')
+def wallet_delete(request, pk):
+    # Wallet.objects.get(pk=pk).delete()
+    # messages.success(request, 'Счёт успешно удалён')
+    # return redirect('wallets')
+
+    # блок который срабатывает при выборе другого счёта или выборе "удалить операции"
+    if request.get.GET('confirm', False):
+        if request.get.GET('move_to', False):
+            pass  # удалить с переносом операций на другой счёт
+        else:
+            pass  # удалить с удалением операций
+        
+    wallet = Wallet.objects.get(pk=pk)
+    print(wallet)
+
+    context = {'title': 'Удаление операции',
+               'wallet': wallet,
+               }
+    context.update(universal_context(request))
+
+    return render(request, 'sym_app/wallet_delete.html', context)
 
 
 class Categories(LoginRequiredMixin, ListView):

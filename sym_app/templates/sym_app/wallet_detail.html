@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }} - {{ block.super }}
+{% endblock %}
+
+{% block content %}
+
+
+<h1>{{ title }}</h1>
+<br>
+<div class="list-group-item list-group-item text-start fs-4" style="max-width:500px;">
+    
+    <table class="table">
+        <tbody>
+        <tr>
+            <td>Название</td>
+            <td class="fs-5"><a href="/?wallet={{ wallet.pk }}">{{ wallet.name }}</a></td>
+        </tr>
+        <tr>
+            <td>Баланс</td>
+            <td class="fs-5">{{ wallet.balance }} {{ wallet.currency }}</td>
+        </tr>
+        <tr>
+            <td>Архивный (в разработке...)</td>
+            <td class="fs-5">{{ wallet.is_archive|yesno:"Да,Нет,Не указано" }}</td>
+        </tr>
+        
+    </table>
+    
+    <div class="hstack gap-3">
+        <a href="#" class="col btn btn-outline-primary btn-lg">Редактировать</a>
+        <div class="vr"></div>
+        <button class="col btn btn-outline-danger btn-lg" onclick="delete_item()">Удалить</button>
+    </div>
+    
+    <script>
+    function delete_item() {
+        var x
+        x = confirm('Вы уверены, что хотите удалить счёт "{{ wallet }}"?');
+        if (x) {
+            location="/wallets/delete/{{ wallet.pk }}";
+        }
+    }
+    </script>
+</div>
+
+
+
+{% endblock %}

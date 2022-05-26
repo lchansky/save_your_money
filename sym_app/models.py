@@ -37,6 +37,9 @@ class Wallet(models.Model):
     def __str__(self):
         return self.name
 
+    def get_absolute_url(self):
+        return reverse('wallet_detail', kwargs={'pk': self.pk})
+
     class Meta:
         verbose_name = 'Счёт'
         verbose_name_plural = 'Счета'
@@ -54,6 +57,9 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
+    def get_absolute_url(self):
+        return reverse('category_detail', kwargs={'pk': self.pk})
+
     class Meta:
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
@@ -67,18 +73,18 @@ class Operation(models.Model):
     
     from_wallet = models.ForeignKey('Wallet',
                                     verbose_name='Счёт списания',
-                                    on_delete=models.CASCADE,
+                                    on_delete=models.PROTECT,
                                     related_name='from_wallet',
                                     db_column='from_wallet')
     
     category = models.ForeignKey('Category',
                                  verbose_name='Категория',
-                                 on_delete=models.CASCADE,
+                                 on_delete=models.PROTECT,
                                  db_column='category')
     
     to_wallet = models.ForeignKey('Wallet',
                                   verbose_name='Счёт получения',
-                                  on_delete=models.CASCADE,
+                                  on_delete=models.PROTECT,
                                   blank=True,
                                   default=None,
                                   related_name='to_wallet',

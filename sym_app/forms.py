@@ -86,7 +86,6 @@ class OperationNewForm(forms.ModelForm):
             if not (data['from_wallet'] and data['to_wallet']):
                 raise ValidationError('Ошибка. Для перевода нужно указать оба счёта. Пожалуйста, укажите счета.')
         else:
-            print('Проверка НЕ сработала, категория НЕ transfer!')
             data['to_wallet'] = None
     
         return data['to_wallet']
@@ -94,5 +93,62 @@ class OperationNewForm(forms.ModelForm):
 
 class OperationEditForm(OperationNewForm):
     pass
+
+
+class WalletNewForm(forms.ModelForm):
     
+    class Meta:
+        model = Wallet
+        fields = ('name', 'balance', 'currency',)
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'balance': forms.NumberInput(attrs={'class': 'form-control'}),
+            'currency': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+
+class WalletEditForm(forms.ModelForm):
+    class Meta:
+        model = Wallet
+        fields = ('name', 'balance', 'currency', 'is_archive')
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'balance': forms.NumberInput(attrs={'class': 'form-control'}),
+            'currency': forms.Select(attrs={'class': 'form-select'}),
+            'is_archive': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+
+class CategoryNewForm(forms.ModelForm):
+        
+    class Meta:
+        model = Category
+        fields = ('name', 'type_of', 'is_budget', 'budget_amount',)
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'type_of': forms.TextInput(attrs={'class': 'form-control', 'hidden': ''}),
+            'is_budget': forms.CheckboxInput(
+                attrs={'class': 'form-check-input', 'onchange': 'active_disable_budget()'}),
+            'budget_amount': forms.NumberInput(attrs={'class': 'form-control', 'disabled': ''}),
+        }
+        help_texts = {'type_of': ''}
+        labels = {'type_of': ''}
+
+
+class CategoryEditForm(forms.ModelForm):
     
+    def __init__(self, *args, **kwargs):
+        super(CategoryEditForm, self).__init__(*args, **kwargs)
+        self.fields['type_of'].queryset = ('Расходы', 'Доходы')
+        
+    class Meta:
+        model = Category
+        fields = ('name', 'type_of', 'is_budget', 'budget_amount', 'is_archive',)
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'type_of': forms.Select(attrs={'class': 'form-select'}),
+            'is_budget': forms.CheckboxInput(
+                attrs={'class': 'form-check-input', 'onchange': 'active_disable_budget()'}),
+            'budget_amount': forms.NumberInput(attrs={'class': 'form-control', 'disabled': ''}),
+            'is_archive': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }

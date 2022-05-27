@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }} - {{ block.super }}
+{% endblock %}
+
+{% block content %}
+    <p>
+    <h1>{{ title }}</h1>
+    </p>
+    
+    <form action="{% url 'wallet_new' %}" method="post" class="text-start fs-5" style="max-width:500px;">
+        
+        {% csrf_token %}
+        {{ form.as_p }}
+        
+        <p>
+            <button type="submit" class="btn btn-primary btn-block">Добавить cчёт</button>
+        </p>
+    </form>
+    
+{% endblock %}

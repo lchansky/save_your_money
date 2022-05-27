@@ -9,7 +9,7 @@
             <h1>{{ title }}</h1>
             </p>
             
-            <form action="{% url 'operation_new' %}" method="post" class="text-start">
+            <form action="{% url 'operation_new' %}" method="post" class="text-start fs-5">
                 
                 {% csrf_token %}
                 {{ form.as_p }}

@@ -24,14 +24,14 @@ class Currency(models.Model):
     class Meta:
         verbose_name = 'Валюта'
         verbose_name_plural = 'Валюты'
-        ordering = ['id']
+        ordering = ['pk']
 
 
 class Wallet(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь')
     name = models.CharField(max_length=150, verbose_name='Название счёта')
-    balance = models.FloatField(default=0)
-    currency = models.ForeignKey('Currency', verbose_name='ID валюты', on_delete=models.PROTECT)
+    balance = models.FloatField(default=0, verbose_name='Баланс')
+    currency = models.ForeignKey('Currency', verbose_name='Валюта', on_delete=models.PROTECT)
     is_archive = models.BooleanField(verbose_name='Архивный счёт?', blank=True, default=False)
     
     def __str__(self):
@@ -50,7 +50,7 @@ class Category(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь', blank=True)
     name = models.CharField(max_length=150, verbose_name='Название категории')
     type_of = models.CharField(max_length=10, verbose_name='Тип категории')
-    is_budget = models.BooleanField(verbose_name='Бюджет вкл./выкл.', blank=True, default=False)
+    is_budget = models.BooleanField(verbose_name='Бюджет вкл./выкл. (в разработке...)', blank=True, default=False)
     budget_amount = models.FloatField(verbose_name='Размер бюджета', blank=True, default=0)
     is_archive = models.BooleanField(verbose_name='Архивная категория?', blank=True, default=False)
 
@@ -120,7 +120,7 @@ class Operation(models.Model):
     class Meta:
         verbose_name = 'Операция'
         verbose_name_plural = 'Операции'
-        ordering = ['-pk']
+        ordering = ['-updated_at']
 
 
 class Profile(models.Model):

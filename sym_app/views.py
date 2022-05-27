@@ -5,7 +5,6 @@ from pytz import UTC
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-from django.http import request
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.views.generic import ListView, CreateView, UpdateView, FormView, DetailView, DeleteView
@@ -251,31 +250,103 @@ class WalletDetail(LoginRequiredMixin, DetailView):
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(universal_context(self.request))
-        context['title'] = 'Детали кошелька'
+        context['title'] = 'Детали счёта'
         return context
 
 
 @login_required(login_url='about')
-def wallet_delete(request, pk):
-    # Wallet.objects.get(pk=pk).delete()
-    # messages.success(request, 'Счёт успешно удалён')
-    # return redirect('wallets')
+def wallet_new(request):
+    if request.method == 'POST':
+        form = WalletNewForm(data=request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            data['user_id'] = request.user.id
+            
+            wallet = Wallet.objects.create(**data)
+            print('Новый счёт:', wallet)
+            messages.success(request, 'Счёт добавлен')
+            return redirect('wallets')
+    else:
+        form = WalletNewForm()
+    
+    context = {'form': form,
+               'title': 'Добавление счёта',
+               }
+    context.update(universal_context(request))
+    
+    return render(request, 'sym_app/wallet_new.html', context)
 
-    # блок который срабатывает при выборе другого счёта или выборе "удалить операции"
-    if request.get.GET('confirm', False):
-        if request.get.GET('move_to', False):
-            pass  # удалить с переносом операций на другой счёт
-        else:
-            pass  # удалить с удалением операций
-        
+
+@login_required(login_url='about')
+def wallet_edit(request, pk):
     wallet = Wallet.objects.get(pk=pk)
-    print(wallet)
-
-    context = {'title': 'Удаление операции',
+    
+    if request.method == 'POST':
+        form = WalletEditForm(data=request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            data['user_id'] = request.user.id
+            Wallet.objects.filter(pk=pk).update(**data)
+            print('Изменён счёт:', wallet)
+            messages.success(request, 'Изменения сохранены')
+            return redirect(wallet.get_absolute_url())
+    else:
+        form = WalletEditForm(initial={'name': wallet.name,
+                                       'balance': wallet.balance,
+                                       'currency': wallet.currency,
+                                       'is_archive': wallet.is_archive,
+                                       })
+    
+    context = {'form': form,
+               'title': 'Изменение счёта',
                'wallet': wallet,
                }
     context.update(universal_context(request))
+    
+    return render(request, 'sym_app/wallet_edit.html', context)
 
+
+@login_required(login_url='about')
+def wallet_delete(request, pk):
+    
+    def confirm_delete(wal, request):
+        wal_name = wal.name
+        wal.delete()
+        messages.success(request, f'Счёт "{wal_name}" успешно удалён!')
+        return redirect('wallets')
+
+    wallet = Wallet.objects.get(pk=pk)
+    if wallet.user != request.user:
+        messages.error(request, 'У вас нет прав для удаления чужого счёта!')
+        return redirect('wallets')
+    
+    wallets_exclude_current = Wallet.objects.filter(user=request.user).exclude(pk=pk)
+    operations_to_move = Operation.objects.filter(Q(user=request.user) & (Q(from_wallet=pk) | Q(to_wallet=pk)))
+    operations_count = operations_to_move.count()
+    
+    if operations_count == 0:
+        return confirm_delete(wallet, request)
+    
+    # Блок, который срабатывает при подтверждении удаления счёта - при выборах переноса или удаления операций.
+    if request.GET.get('confirm', False):
+        move_to = request.GET.get('move_to', False)
+        
+        if move_to:  # удалить с переносом операций на другой счёт
+            # проверка чтобы не перенести операции на чужой кошелёк
+            if int(move_to) in wallets_exclude_current.values_list('pk', flat=True):
+                operations_to_move.filter(from_wallet=pk).update(from_wallet=int(move_to))
+                operations_to_move.filter(to_wallet=pk).update(to_wallet=int(move_to))
+                return confirm_delete(wallet, request)
+        else:  # удалить с удалением операций
+            operations_to_move.delete()
+            return confirm_delete(wallet, request)
+        
+    context = {'title': f'Удаление счёта "{wallet.name}"',
+               'wallet': wallet,
+               'wallets_exclude_current': wallets_exclude_current,
+               'operations_count': operations_count
+               }
+    context.update(universal_context(request))
     return render(request, 'sym_app/wallet_delete.html', context)
 
 
@@ -307,20 +378,143 @@ class Categories(LoginRequiredMixin, ListView):
         return categories_pay, categories_earn
 
 
-class Settings(LoginRequiredMixin, UpdateView):
+class CategoryDetail(LoginRequiredMixin, DetailView):
     redirect_field_name = None  # Для миксина LoginRequiredMixin
     login_url = 'about'  # Для миксина LoginRequiredMixin
     
+    model = Category
+    template_name = 'sym_app/category_detail.html'
+    context_object_name = 'category'
+    
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(universal_context(self.request))
+        context['title'] = 'Детали категории'
+        return context
+
+
+@login_required(login_url='about')
+def category_new(request):
+    if request.method == 'POST':
+        form = CategoryNewForm(data=request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            data['user_id'] = request.user.id
+            if data['budget_amount'] is None:
+                data['budget_amount'] = 0
+            category = Category.objects.create(**data)
+            print('Новая категория:', category)
+            messages.success(request, f'Категория "{category}" добавлена')
+            return redirect('categories')
+    else:
+        form = CategoryNewForm(initial={'type_of': 'pay'})
+    
+    context = {'form': form,
+               'title': 'Добавление категории',
+               'types': ('pay', 'earn')
+               }
+    context.update(universal_context(request))
+    
+    return render(request, 'sym_app/category_new.html', context)
+
+
+@login_required(login_url='about')
+def category_edit(request, pk):
+    category = Category.objects.get(pk=pk)
+    
+    if request.method == 'POST':
+        form = CategoryEditForm(data=request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            data['user_id'] = request.user.id
+            Category.objects.filter(pk=pk).update(**data)
+            print('Изменена категория:', category)
+            messages.success(request, 'Изменения сохранены')
+            return redirect(category.get_absolute_url())
+    else:
+        form = CategoryEditForm(initial={'type_of': category.type_of,
+                                         'name': category.name,
+                                         'is_budget': category.is_budget,
+                                         'budget_amount': category.budget_amount,
+                                         'is_archive': category.is_archive,
+                                         })
+    
+    context = {'form': form,
+               'title': 'Изменение категории',
+               'category': category,
+               }
+    context.update(universal_context(request))
+    
+    return render(request, 'sym_app/category_edit.html', context)
+
+
+@login_required(login_url='about')
+def category_delete(request, pk):
+    
+    def confirm_delete(cat, request):
+        cat_name = cat.name
+        cat.delete()
+        messages.success(request, f'Категория "{cat_name}" успешно удалена!')
+        return redirect('categories')
+    
+    category = Category.objects.get(pk=pk)
+    
+    if category.user != request.user:
+        messages.error(request, 'У вас нет прав для удаления чужой категории!')
+        return redirect('categories')
+    if category.type_of == 'transfer':
+        messages.error(request, 'Нельзя удалить категорию "Переводы"')
+        return redirect('categories')
+        
+    categories_exclude_current = Category.objects.filter(user=request.user, type_of=category.type_of).exclude(pk=pk)
+    operations_to_move = Operation.objects.filter(user=request.user, category=pk)
+    operations_count = operations_to_move.count()
+    
+    if operations_count == 0:
+        return confirm_delete(category, request)
+    
+    # Блок, который срабатывает при подтверждении удаления категории - при выборах переноса или удаления операций.
+    if request.GET.get('confirm', False):
+        move_to = request.GET.get('move_to', False)
+        
+        if move_to:  # удалить с переносом операций на другую категорию
+            
+            # проверка чтобы не перенести операции на чужую категорию
+            if int(move_to) in categories_exclude_current.values_list('pk', flat=True):
+                operations_to_move.update(category=int(move_to))
+                return confirm_delete(category, request)
+            else:
+                messages.error(request, 'Нельзя перенести операции на данную категорию! Она чужая или не того типа!')
+                return redirect('categories')
+            
+        else:  # удалить с удалением операций
+            operations_to_move.delete()
+            return confirm_delete(category, request)
+    
+    context = {'title': f'Удаление категории "{category.name}"',
+               'category': category,
+               'categories_exclude_current': categories_exclude_current,
+               'operations_count': operations_count,
+               }
+    context.update(universal_context(request))
+    return render(request, 'sym_app/category_delete.html', context)
+
+
+class Settings(LoginRequiredMixin, UpdateView):
+    # Для миксина LoginRequiredMixin
+    
+    login_url = 'about'  # Для миксина LoginRequiredMixin
     model = Profile
     template_name = 'sym_app/settings.html'
     form_class = UserSettingsForm
     success_url = '__self__'
+    
     context_object_name = 'user_settings'
     
     def form_valid(self, form):
         messages.success(self.request, 'Настройки успешно сохранены')
         return super().form_valid(form)
-        
+    
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Настройки'
@@ -329,4 +523,3 @@ class Settings(LoginRequiredMixin, UpdateView):
     
     def get_object(self, queryset=None):
         return Profile.objects.get(user=self.request.user)
-    

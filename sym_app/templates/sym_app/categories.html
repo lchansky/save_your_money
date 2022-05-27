@@ -9,7 +9,7 @@
 <h1>{{ title }}</h1>
 <br>
 <div class="container">
-    <div class="row">
+    <div class="row fs-5">
         
         <div class="col">
             <div class="card text-dark bg-light border-danger mb-5" style="max-width: 35rem;">
@@ -18,7 +18,7 @@
                 </div>
                 
                 {% for category in categories_pay %}
-                <a href="#" class="list-group-item list-group-item-action">
+                <a href="{{ category.get_absolute_url }}" class="list-group-item list-group-item-action">
                         {{ category.name }}
                 </a>
                 {% endfor %}
@@ -33,7 +33,7 @@
                 </div>
                 
                 {% for category in categories_earn %}
-                <a href="#" class="list-group-item list-group-item-action">
+                <a href="{{ category.get_absolute_url }}" class="list-group-item list-group-item-action">
                         {{ category.name }}
                 </a>
                 {% endfor %}
@@ -49,7 +49,7 @@
     <div class="row">
         
         <div class="col">
-            <a href="#" class="btn btn-primary btn-lg">Добавить категорию</a>
+            <a href="{% url 'category_new' %}" class="btn btn-primary btn-lg">Добавить категорию</a>
         </div>
         
         <div class="col">

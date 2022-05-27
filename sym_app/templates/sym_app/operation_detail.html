@@ -63,7 +63,7 @@
         var x
         x = confirm('Вы уверены, что хотите удалить операцию?');
         if (x) {
-            location="/operations/delete/{{ operation.pk }}";
+            location="{% url 'operation_delete' operation.pk %}";
         }
     }
   </script>

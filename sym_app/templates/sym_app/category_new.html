@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }} - {{ block.super }}
+{% endblock %}
+
+{% block content %}
+    <p>
+    <h1>{{ title }}</h1>
+    </p>
+    
+    <form action="{% url 'category_new' %}" method="post" class="text-start fs-5" style="max-width:500px;">
+        
+        {% csrf_token %}
+        {{ form.as_p }}
+        
+        <p>
+            Тип категории:
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio1" value="option1" checked onclick="pay()">
+                <label class="form-check-label" for="inlineRadio1">Расходы</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio2" value="option2" onclick="earn()">
+                <label class="form-check-label" for="inlineRadio2">Доходы</label>
+            </div>
+        </p>
+        
+        <p>
+            <button type="submit" class="btn btn-primary btn-block">Добавить категорию</button>
+        </p>
+    </form>
+    <script>
+        // Делает поле budget_amount активным или неактивным, если checkbox отмечен.
+        function active_disable_budget() {
+            var element = document.querySelector('input[type=checkbox]');
+            if (element.checked) {
+                document.getElementById("id_budget_amount").disabled = false;
+            } else {
+                document.getElementById("id_budget_amount").disabled = true;
+            }
+        }
+        
+        function pay() {
+            document.getElementById("id_type_of").value = "pay";
+        }
+        function earn() {
+            document.getElementById("id_type_of").value = "earn";
+        }
+    </script>
+{% endblock %}

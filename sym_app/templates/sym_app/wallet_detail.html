@@ -29,7 +29,7 @@
     </table>
     
     <div class="hstack gap-3">
-        <a href="#" class="col btn btn-outline-primary btn-lg">Редактировать</a>
+        <a href="{% url 'wallet_edit' wallet.pk %}" class="col btn btn-outline-primary btn-lg">Редактировать</a>
         <div class="vr"></div>
         <button class="col btn btn-outline-danger btn-lg" onclick="delete_item()">Удалить</button>
     </div>
@@ -39,7 +39,7 @@
         var x
         x = confirm('Вы уверены, что хотите удалить счёт "{{ wallet }}"?');
         if (x) {
-            location="/wallets/delete/{{ wallet.pk }}";
+            location="{% url 'wallet_delete' wallet.pk %}";
         }
     }
     </script>

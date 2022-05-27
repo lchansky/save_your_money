@@ -23,7 +23,7 @@
         </tr>
         <tr>
             <td>Название</td>
-            <td class="fs-5"><a href="#">{{ category.name }}</a></td>
+            <td class="fs-5"><a href="{% url 'operations' %}?category={{ category.pk }}">{{ category.name }}</a></td>
         </tr>
         <tr>
             <td>Бюджет (в разработке...)</td>

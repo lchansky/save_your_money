@@ -10,9 +10,9 @@
 <br>
 <div class="container">
     <div class="row fs-5">
-        
+        {% if categories_pay %}
         <div class="col">
-            <div class="card text-dark bg-light border-danger mb-5" style="max-width: 35rem;">
+            <div class="card text-dark bg-light border-danger mb-5" style="max-width: 350px;">
                 <div class="card-header">
                     <div class="fs-4">Расходы</div>
                 </div>
@@ -25,9 +25,10 @@
                 
             </div>
         </div>
-        
+        {% endif %}
+        {% if categories_earn %}
         <div class="col">
-            <div class="card text-dark bg-light border-success mb-5" style="max-width: 35rem;">
+            <div class="card text-dark bg-light border-success mb-5" style="max-width: 350px;">
                 <div class="card-header">
                     <div class="fs-4">Доходы</div>
                 </div>
@@ -39,7 +40,7 @@
                 {% endfor %}
             </div>
         </div>
-        
+        {% endif %}
     </div>
 </div>
 

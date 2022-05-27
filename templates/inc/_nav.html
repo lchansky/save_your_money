@@ -23,12 +23,12 @@
                         Операции
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                        <li><a class="dropdown-item" href="/operations/?type_of=pay">Расходы</a></li>
-                        <li><a class="dropdown-item" href="/operations/?type_of=earn">Доходы</a></li>
-                        <li><a class="dropdown-item" href="/operations/?type_of=transfer">Переводы</a></li>
+                        <li><a class="dropdown-item" href="{% url 'operations' %}?type_of=pay">Расходы</a></li>
+                        <li><a class="dropdown-item" href="{% url 'operations' %}?type_of=earn">Доходы</a></li>
+                        <li><a class="dropdown-item" href="{% url 'operations' %}?type_of=transfer">Переводы</a></li>
                         
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{% url 'home' %}">Все операции</a></li>
+                        <li><a class="dropdown-item" href="{% url 'operations' %}">Все операции</a></li>
                         
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{% url 'operation_new' %}">Добавить операцию</a></li>
@@ -56,8 +56,8 @@
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
     
-                        <li><a class="dropdown-item" href="#">Расходные</a></li>
-                        <li><a class="dropdown-item" href="#">Доходные</a></li>
+                        <li><a class="dropdown-item" href="{% url 'categories' %}?type=pay">Расходные</a></li>
+                        <li><a class="dropdown-item" href="{% url 'categories' %}?type=earn">Доходные</a></li>
     
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{% url 'categories' %}">Все категории</a></li>

@@ -15,21 +15,21 @@
         <tbody>
         <tr>
             <td>Дата и время</td>
-            <td class="fs-5"><a href="#">{{ operation.updated_at|date }}</a> {{ operation.updated_at|time }}</td>
+            <td class="fs-5"><a href="{% url 'operations' %}?date_from={{ operation.updated_at|date:'Y-m-d' }}&date_to={{ operation.updated_at|date:'Y-m-d' }}">{{ operation.updated_at|date }}</a> {{ operation.updated_at|time }}</td>
         </tr>
         <tr>
             <td>Категория</td>
-            <td class="fs-5"><a href="#">{{ operation.category }}</a></td>
+            <td class="fs-5"><a href="{% url 'operations' %}?category={{ operation.category.pk }}">{{ operation.category }}</a></td>
         </tr>
         <tr>
             <td>Со счёта</td>
-            <td class="fs-5"><a href="/?wallet={{ operation.from_wallet.pk }}">{{ operation.from_wallet }}</a></td>
+            <td class="fs-5"><a href="{% url 'operations' %}?wallet={{ operation.from_wallet.pk }}">{{ operation.from_wallet }}</a></td>
         </tr>
         
         {% if operation.to_wallet %}
             <tr>
                 <td>На счёт</td>
-                <td class="fs-5"><a href="/?wallet={{ operation.to_wallet.pk }}">{{ operation.to_wallet }}</a></td>
+                <td class="fs-5"><a href="{% url 'operations' %}?wallet={{ operation.to_wallet.pk }}">{{ operation.to_wallet }}</a></td>
             </tr>
         {% endif %}
         

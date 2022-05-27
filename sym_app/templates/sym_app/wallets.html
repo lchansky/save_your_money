@@ -19,9 +19,9 @@
         
         <div class="list-group-item list-group-item-action">
             <div class="d-flex w-100 justify-content-between">
-                <a href="#" class="btn btn-outline-secondary">Операции по счёту</a>
-                <a href="#" class="btn btn-outline-secondary">Детали</a>
-                <a href="#" class="btn btn-outline-secondary">Редактировать</a>
+                <a href="{% url 'operations' %}?wallet={{ wallet.pk }}" class="btn btn-outline-secondary">Операции по счёту</a>
+                <a href="{% url 'wallet_detail' wallet.pk %}" class="btn btn-outline-secondary">Детали</a>
+                <a href="{% url 'wallet_edit' wallet.pk %}" class="btn btn-outline-secondary">Редактировать</a>
             </div>
         </div>
     </div>

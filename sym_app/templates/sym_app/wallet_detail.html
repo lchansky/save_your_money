@@ -15,7 +15,7 @@
         <tbody>
         <tr>
             <td>Название</td>
-            <td class="fs-5"><a href="/?wallet={{ wallet.pk }}">{{ wallet.name }}</a></td>
+            <td class="fs-5"><a href="{% url 'operations' %}?wallet={{ wallet.pk }}">{{ wallet.name }}</a></td>
         </tr>
         <tr>
             <td>Баланс</td>

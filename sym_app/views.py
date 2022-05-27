@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 from pprint import pprint
 import pytz
 from pytz import UTC
@@ -74,12 +74,11 @@ class HomeOperations(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Список операций'
         context['operations_in_days'] = self.get_operations_in_days()
-        # context['sorting'] = self.sorting()
         context.update(universal_context(self.request))
-        # print(self.sorting())
         return context
     
     def get_operations_in_days(self):
+        """Возвращает словарь, где ключи - даты, а значения - списки из операций в эту дату {date: [operations]}"""
         operations = self.get_queryset()
         operations_in_days = {}  # {date1: [operation1, operation2, ...], date2: [operation3, operation4, ...], }
         
@@ -98,14 +97,50 @@ class HomeOperations(LoginRequiredMixin, ListView):
         return operations_in_days
     
     def sorting(self):
+        """Собирает параметры запроса к БД, где user это текущий пользователь,
+        а все остальные параметры берутся из URL адреса"""
         kwargs = {}
         kwargs['user'] = self.request.user
-        kwargs['category__type_of'] = self.request.GET.get("type_of", F('category__type_of'))
-        q = Q(user=kwargs['user']) & Q(category__type_of=kwargs['category__type_of'])
+        q = Q(user=kwargs['user'])
         
-        kwargs['from_wallet__pk'] = self.request.GET.get("wallet", F('from_wallet__pk'))
-        kwargs['to_wallet__pk'] = self.request.GET.get("wallet", F('to_wallet__pk'))
-        q = q & (Q(from_wallet__pk=kwargs['from_wallet__pk']) | Q(to_wallet__pk=kwargs['to_wallet__pk']))
+        kwargs['category__type_of'] = self.request.GET.get('type_of', False)
+        if kwargs['category__type_of']:
+            q = q & Q(category__type_of=kwargs['category__type_of'])
+        
+        kwargs['category'] = self.request.GET.get('category', False)
+        if kwargs['category']:
+            q = q & Q(category=kwargs['category'])
+        
+        kwargs['description'] = self.request.GET.get('description', False)
+        if kwargs['description']:
+            q = q & Q(description__icontains=kwargs['description'])  # чувствителен к регистру из-за особенностей SQlite
+        
+        kwargs['date_from'] = self.request.GET.get('date_from', False)
+        if kwargs['date_from']:
+            kwargs['date_from'] = dt.datetime.strptime(kwargs['date_from'], '%Y-%m-%d')
+        kwargs['date_to'] = self.request.GET.get('date_to', False)
+        if kwargs['date_to']:
+            kwargs['date_to'] = dt.datetime.strptime(kwargs['date_to'], '%Y-%m-%d')
+        if kwargs['date_from'] and kwargs['date_to']:
+            if kwargs['date_from'] > kwargs['date_to']:
+                kwargs['date_from'], kwargs['date_to'] = kwargs['date_to'], kwargs['date_from']
+            if kwargs['date_to'] < dt.datetime.max - dt.timedelta(1):
+                kwargs['date_to'] += dt.timedelta(1)
+            q = q & Q(updated_at__gte=kwargs['date_from']) & Q(updated_at__lte=kwargs['date_to'])
+        else:
+            if kwargs['date_from']:
+                q = q & Q(updated_at__gte=kwargs['date_from'])
+            if kwargs['date_to']:
+                if kwargs['date_to'] < dt.datetime.max - dt.timedelta(1):
+                    kwargs['date_to'] += dt.timedelta(1)
+                q = q & Q(updated_at__lte=kwargs['date_to'])
+        
+        wallet = self.request.GET.get('wallet', False)
+        if wallet:
+            kwargs['from_wallet__pk'] = wallet
+            kwargs['to_wallet__pk'] = wallet
+            q = q & (Q(from_wallet__pk=kwargs['from_wallet__pk']) | Q(to_wallet__pk=kwargs['to_wallet__pk']))
+        
         return q
     
     def get_queryset(self):
@@ -153,10 +188,10 @@ def operation_edit(request, pk):
             return redirect(operation.get_absolute_url())
     else:
         # Добавляю дельту таймзоны, т.к. в БД время в UTC.
-        dt = operation.updated_at.astimezone(tz=pytz.timezone(TIME_ZONE))
+        dt_with_tz = operation.updated_at.astimezone(tz=pytz.timezone(TIME_ZONE))
         
         form = OperationEditForm(request=request, initial={
-            'updated_at': dt.strftime('%Y-%m-%dT%H:%M'),  # HTML понимает только формат времени 'yyyy-mm-ddThh:mm'
+            'updated_at': dt_with_tz.strftime('%Y-%m-%dT%H:%M'),  # HTML понимает только формат 'yyyy-mm-ddThh:mm'
             'from_wallet': operation.from_wallet,
             'category': operation.category,
             'to_wallet': operation.to_wallet,
@@ -361,9 +396,15 @@ class Categories(LoginRequiredMixin, ListView):
     
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Список категорий'
         context['categories_pay'], context['categories_earn'] = self.categories_pay_earn()
-        # print(context['categories_pay'])
+        context['type'] = self.request.GET.get('type', False)
+        context['title'] = 'Список категорий'
+        if context['type'] == 'pay':
+            context['title'] += ' - расходы'
+            context.pop('categories_earn')
+        if context['type'] == 'earn':
+            context['title'] += ' - доходы'
+            context.pop('categories_pay')
         context.update(universal_context(self.request))
         return context
     
@@ -373,8 +414,8 @@ class Categories(LoginRequiredMixin, ListView):
     def categories_pay_earn(self):
         """Возвращает 2 списка - список расходных и список доходных категорий пользователя"""
         categories = self.get_queryset()
-        categories_pay = Category.objects.filter(user=self.request.user, type_of='pay')
-        categories_earn = Category.objects.filter(user=self.request.user, type_of='earn')
+        categories_pay = categories.filter(type_of='pay')
+        categories_earn = categories.filter(type_of='earn')
         return categories_pay, categories_earn
 
 

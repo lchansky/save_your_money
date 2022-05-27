@@ -7,13 +7,14 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
-from django.views.generic import ListView, CreateView, UpdateView, FormView, DetailView, DeleteView
+from django.views.generic import ListView, UpdateView, DetailView
 from django.contrib import messages
-from django.contrib.auth import login, logout, get_user_model, get_user
+from django.contrib.auth import login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q, F
 
 from sym_django.settings import TIME_ZONE
+from .decorators import check_permissions
 from .models import *
 from .forms import *
 
@@ -163,6 +164,7 @@ class OperationDetail(LoginRequiredMixin, DetailView):
         
 
 @login_required(login_url='about')
+@check_permissions(model=Operation, redirect_page='operations')
 def operation_delete(request, pk):
     Operation.objects.get(pk=pk).delete()
     messages.success(request, 'Операция успешно удалена')
@@ -170,8 +172,8 @@ def operation_delete(request, pk):
 
 
 @login_required(login_url='about')
+@check_permissions(model=Operation, redirect_page='operations')
 def operation_edit(request, pk):
-    
     operation = Operation.objects.get(pk=pk)
     
     if request.method == 'POST':
@@ -313,6 +315,7 @@ def wallet_new(request):
 
 
 @login_required(login_url='about')
+@check_permissions(model=Wallet, redirect_page='wallets')
 def wallet_edit(request, pk):
     wallet = Wallet.objects.get(pk=pk)
     
@@ -342,6 +345,7 @@ def wallet_edit(request, pk):
 
 
 @login_required(login_url='about')
+@check_permissions(model=Wallet, redirect_page='wallets')
 def wallet_delete(request, pk):
     
     def confirm_delete(wal, request):
@@ -460,6 +464,7 @@ def category_new(request):
 
 
 @login_required(login_url='about')
+@check_permissions(model=Category, redirect_page='categories')
 def category_edit(request, pk):
     category = Category.objects.get(pk=pk)
     
@@ -490,6 +495,7 @@ def category_edit(request, pk):
 
 
 @login_required(login_url='about')
+@check_permissions(model=Category, redirect_page='categories')
 def category_delete(request, pk):
     
     def confirm_delete(cat, request):

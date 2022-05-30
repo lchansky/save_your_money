@@ -16,7 +16,8 @@ from sym_app.utils import default_user_settings
 class Currency(models.Model):
     name = models.CharField(max_length=20, verbose_name='Валюта')
     exchange_to = models.CharField(max_length=20, verbose_name='Валюта для обмена')
-    exchange_rate = models.FloatField(verbose_name='Курс валюты')
+    exchange_rate = models.FloatField(verbose_name='Курс (сколько стоит валюта name в валюте exchange_to)')
+    exchange_rate_reverse = models.FloatField(verbose_name='Курс (сколько стоит валюта exchange_to в валюте name)')
 
     def __str__(self):
         return self.name
@@ -35,7 +36,7 @@ class Wallet(models.Model):
     is_archive = models.BooleanField(verbose_name='Архивный счёт?', blank=True, default=False)
     
     def __str__(self):
-        return self.name
+        return f'{self.name} ({self.currency})'
 
     def get_absolute_url(self):
         return reverse('wallet_detail', kwargs={'pk': self.pk})
@@ -97,6 +98,8 @@ class Operation(models.Model):
                                   related_name='currency1')
     
     amount1 = models.FloatField(verbose_name='Сумма списания')
+
+    exchange_rate = models.FloatField(verbose_name='Курс', default=1, blank=True)
     
     currency2 = models.ForeignKey('Currency',
                                   verbose_name='Валюта платежа',

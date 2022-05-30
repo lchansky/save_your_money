@@ -1,5 +1,4 @@
 import re
-from datetime import datetime
 
 from django.contrib.auth import get_user, get_user_model
 from django.contrib.auth.middleware import AuthenticationMiddleware
@@ -55,17 +54,23 @@ class OperationNewForm(forms.ModelForm):
         model = Operation
         fields = (
             'updated_at', 'from_wallet', 'category', 'to_wallet',
-            'currency1', 'amount1', 'currency2', 'amount2', 'description'
+            'currency1', 'amount1', 'exchange_rate', 'currency2', 'amount2', 'description'
         )
         widgets = {
             'updated_at': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
-            'from_wallet': forms.Select(attrs={'class': 'form-select'}),
-            'category': forms.Select(attrs={'class': 'form-select', 'onchange': 'enable_or_disable_wallet2(this.value)'}),
-            'to_wallet': forms.Select(attrs={'class': 'form-select', 'disabled': ''}),
-            'currency1': forms.Select(attrs={'class': 'form-select', 'onchange': 'same_or_not_currencies()'}),
+            'from_wallet': forms.Select(attrs={
+                'class': 'form-select',
+                'onchange': 'transfer_check(this), change_currency1(this.value), repeat_currency2()'}),
+            'category': forms.Select(attrs={'class': 'form-select', 'onchange': 'choice_transfer()'}),
+            'to_wallet': forms.Select(attrs={
+                'class': 'form-select',
+                'disabled': '',
+                'onchange': 'transfer_check(this), change_currency2(this.value)'}),
+            'currency1': forms.Select(attrs={'class': 'form-select', 'onchange': 'same_or_not_currencies()', 'disable': ''}),
             'amount1': forms.NumberInput(attrs={'class': 'form-control', 'onchange': 'change_amount2_by_amount1()'}),
+            'exchange_rate': forms.NumberInput(attrs={'class': 'form-control', 'onchange': 'exchanger()', 'disabled': ''}),
             'currency2': forms.Select(attrs={'class': 'form-select', 'onchange': 'same_or_not_currencies()'}),
-            'amount2': forms.NumberInput(attrs={'class': 'form-control', 'disabled': ''}),
+            'amount2': forms.NumberInput(attrs={'class': 'form-control', 'disabled': '', 'onchange': 'change_amount1_by_amount2()'}),
             'description': forms.TextInput(attrs={'class': 'form-control'})
         }
         labels = {
@@ -77,6 +82,34 @@ class OperationNewForm(forms.ModelForm):
             'to_wallet':  'Чтобы перевести деньги со счёта на счёт, выберите категорию "Переводы"'
         }
     
+    def clean_currency1(self):
+        data = self.cleaned_data
+        if data['currency1'] != data['from_wallet'].currency:
+            raise ValidationError(f"""Ошибка. Валюта списания со счёта "{data["from_wallet"]}" не совпадает
+            c валютой самого счёта. Укажите валюту списания {data["from_wallet"].currency}.""")
+        return data['currency1']
+    
+    # Кастомная валидация, срабатывает автоматически для поля currency1
+    def clean_currency2(self):
+        data = self.cleaned_data
+        if not data['currency2']:
+            if data['category'].type_of == 'transfer':
+                data['currency2'] = data['to_wallet'].currency
+            else:
+                data['currency2'] = data['from_wallet'].currency
+                
+        if 'to_wallet' in data.keys() and data['to_wallet'] and data['currency2'] != data['to_wallet'].currency:
+            raise ValidationError(f"""Ошибка. Валюта получения перевода на счёт "{data["to_wallet"]}" не совпадает
+            c валютой самого счёта. Укажите "Валюту платежа" {data["to_wallet"].currency}.""")
+        return data['currency2']
+
+    # Кастомная валидация, срабатывает автоматически для поля currency2
+    def clean_amount2(self):
+        data = self.cleaned_data
+        if 'amount2' not in data.keys():
+            data['amount2'] = data['amount1']
+        return data['amount2']
+    
     # Кастомная валидация, срабатывает если указана категория "Перевод"
     def clean_to_wallet(self):
         data = self.cleaned_data
@@ -84,11 +117,16 @@ class OperationNewForm(forms.ModelForm):
             if data['from_wallet'] == data['to_wallet']:
                 raise ValidationError('Ошибка. Для перевода нужно указать разные счета. Пожалуйста, выберите другой счёт.')
             if not (data['from_wallet'] and data['to_wallet']):
-                raise ValidationError('Ошибка. Для перевода нужно указать оба счёта. Пожалуйста, укажите счета.')
+                raise ValidationError('Ошибка. Для перевода нужно указать два счёта. Пожалуйста, укажите счета.')
         else:
             data['to_wallet'] = None
-    
         return data['to_wallet']
+    
+    def clean_exchange_rate(self):
+        data = self.cleaned_data
+        if not data['exchange_rate']:
+            data['exchange_rate'] = 1
+        return data['exchange_rate']
 
 
 class OperationEditForm(OperationNewForm):

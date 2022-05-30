@@ -1,5 +1,6 @@
 from django.db import models
-from datetime import datetime  # не удалять
+import datetime as dt  # не удалять
+from pycbrf import ExchangeRates
 
 from . import models
 
@@ -35,7 +36,7 @@ def default_user_settings(instance):
     #
     # models.Operation.objects.create(
     #     user=instance,
-    #     updated_at=datetime.now(),
+    #     updated_at=dt.datetime.now(),
     #     from_wallet=models.Wallet.objects.get(user=instance, name='Карта'),
     #     category=models.Category.objects.get(user=instance, name='Продукты'),
     #     currency1=..., amount1=500,

@@ -2,6 +2,8 @@ import datetime as dt
 from pprint import pprint
 import pytz
 from pytz import UTC
+from google_currency import convert, CODES
+import json
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
@@ -204,14 +206,16 @@ def operation_edit(request, pk):
             'description': operation.description,
         })
 
+    wallets_currency_dict = {wallet.pk: wallet.currency.pk
+                             for wallet in Wallet.objects.filter(user=request.user)}
+    with open('exchange_rates_pks.json', 'r') as file:
+        exchange_rates_pks = file.read()
     context = {'form': form,
                'title': 'Изменение операции',
                'operation': operation,
                'transfer_category': Category.objects.get(user=request.user, type_of='transfer').pk,
-               'main_currency_id': Currency.objects.get(name='RUB').pk,
-               # Здесь нужно будет в будущем отправить в контекст основную
-               # валюту пользователя, а не просто Рубль. Чтобы отображать
-               # расходы с разными валютами, в одной - основной валюте
+               'wallets_currency_dict': wallets_currency_dict,
+               'exchange_rates_pks': exchange_rates_pks,
                }
     context.update(universal_context(request))
 
@@ -228,21 +232,23 @@ def operation_new(request):
             if not data['currency2'] or not data['amount2']:
                 data['currency2'] = data['currency1']
                 data['amount2'] = data['amount1']
-            
             operation = Operation.objects.create(**data)
             print('Новая операция:', operation)
             messages.success(request, 'Операция добавлена')
             return redirect('home')
     else:
-        form = OperationNewForm(request=request)
+        form = OperationNewForm(request=request, initial={'from_wallet': Wallet.objects.filter(user=request.user).first()})
+
+    wallets_currency_dict = {wallet.pk: wallet.currency.pk
+                             for wallet in Wallet.objects.filter(user=request.user)}
+    with open('exchange_rates_pks.json', 'r') as file:
+        exchange_rates_pks = file.read()
     
     context = {'form': form,
                'title': 'Добавление операции',
                'transfer_category': Category.objects.get(user=request.user, type_of='transfer').pk,
-               'main_currency_id': Currency.objects.get(name='RUB').pk,
-               # Здесь нужно будет в будущем отправить в контекст основную
-               # валюту пользователя, а не просто Рубль. Чтобы отображать
-               # расходы с разными валютами, в одной - основной валюте
+               'wallets_currency_dict': wallets_currency_dict,
+               'exchange_rates_pks': exchange_rates_pks,
                }
     context.update(universal_context(request))
     
@@ -570,3 +576,42 @@ class Settings(LoginRequiredMixin, UpdateView):
     
     def get_object(self, queryset=None):
         return Profile.objects.get(user=self.request.user)
+
+
+def update_currencies(request):
+    currencies = Currency.objects.all()
+    for currency in currencies:  # берём по одной валюте из БД
+        if currency.name in CODES.keys() and currency.exchange_to in CODES.keys():
+            converted = json.loads(convert(currency.name, currency.exchange_to, 1000)) # 1000 для точности, больше знаков после запятой
+            currency.exchange_rate = float(converted['amount']) / 1000
+            currency.exchange_rate_reverse = 1000 / float(converted['amount'])
+            currency.save()
+    exchange = {}
+    exchange_pks = {}
+    for c_outer in currencies:
+        exchange[c_outer.name] = {}
+        exchange_pks[c_outer.pk] = {}
+        if c_outer.name in CODES.keys():
+            for c_inner in currencies.exclude(pk=c_outer.pk):
+                if c_inner.name in CODES.keys():
+                    converted = json.loads(convert(c_inner.name, c_outer.name, 1000))
+                    exchange[c_outer.name][c_inner.name] = float(converted['amount']) / 1000
+                    exchange_pks[c_outer.pk][c_inner.pk] = float(converted['amount']) / 1000
+                elif c_inner.exchange_to in CODES.keys():
+                    converted = json.loads(convert(c_inner.exchange_to, c_outer.name, 1000))
+                    exchange[c_outer.name][c_inner.name] = float(converted['amount']) / 1000 * c_inner.exchange_rate
+                    exchange_pks[c_outer.pk][c_inner.pk] = float(converted['amount']) / 1000 * c_inner.exchange_rate
+        elif c_outer.exchange_to in CODES.keys():
+            for c_inner in currencies.exclude(pk=c_outer.pk):
+                if c_inner.name in CODES.keys():
+                    converted = json.loads(convert(c_inner.name, c_outer.exchange_to, 1000))
+                    exchange[c_outer.name][c_inner.name] = float(converted['amount']) / 1000 / c_outer.exchange_rate
+                    exchange_pks[c_outer.pk][c_inner.pk] = float(converted['amount']) / 1000 / c_outer.exchange_rate
+    with open('exchange_rates.json', 'w') as file:
+        json.dump(exchange, file)
+    with open('exchange_rates_pks.json', 'w') as file:
+        json.dump(exchange_pks, file)
+    
+    print('====== Обновление курсов валют прошло успешно, БД и JSON обновлены ======')
+    
+    return render(request, 'sym_app/about.html')

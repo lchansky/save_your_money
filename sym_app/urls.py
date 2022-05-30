@@ -29,4 +29,6 @@ urlpatterns = [
     path('logout/', user_logout, name='logout'),
     
     path('about/', about, name='about'),
+    
+    path('update_currencies/', update_currencies, name='update_currencies')
 ]

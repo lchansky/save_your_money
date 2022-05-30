@@ -9,41 +9,103 @@
             <h1>{{ title }}</h1>
             </p>
             
-            <form action="{% url 'operation_new' %}" method="post" class="text-start fs-5">
-                
+            <form action="{% url 'operation_new' %}" method="post" class="text-start fs-5" style="max-width:600px;">
                 {% csrf_token %}
-                {{ form.as_p }}
+            
+<!--                {{ form.as_p }}-->
 
-                <!-- !!!!!!!     Ручной вывод формы
                 
-                {% comment %}
                 {% for f in form %}
                 <p>
-                    {{ f.label }}
+                    {{ f.label }}:
                     {{ f }}
                     {{ f.help_text }}
                 </p>
-                {% endfor %} 
-                {% endcomment %}  -->
+                {% endfor %}
+                
                 
                 <p>
-                    <button type="submit" class="btn btn-primary btn-block">Добавить операцию</button>
+                    <button type="submit" class="btn btn-primary btn-block" onclick="enable_all_fields()">Добавить операцию</button>
                 </p>
             </form>
             <script>
-                document.getElementById("id_currency1").value = {{ main_currency_id }};
-                document.getElementById("id_currency2").value = document.getElementById("id_currency1").value;
-                enable_or_disable_wallet2(document.getElementById("id_category").value);
-                same_or_not_currencies()
+                // Этот блок делает "передачу" некоторых данных из Python-Django в JS, чтобы можно было в дальнейшем юзать
+                const wallets_currency_dict = {
+                {% for k, v in wallets_currency_dict.items %}{{ k }}:'{{ v }}', {% endfor %}
+                };
+                const response = '{% autoescape off %}{{ exchange_rates_pks }}{% endautoescape %}';
+                const JsonObject = JSON.parse(response);
+                console.log(JsonObject);
 
+                choice_transfer();
+                change_currency1(document.getElementById("id_from_wallet").value);
+                same_or_not_currencies();
+                repeat_currency2();
+
+                // Активирует или деактивирует поле "to_wallet".
+                // Если выбрана категория "Переводы", то активирует. Если другая, то деактивирует.
+                function choice_transfer() {
+                    if (Number(document.getElementById("id_category").value) === {{ transfer_category }} ) {
+                        document.getElementById("id_to_wallet").disabled = false;
+                    } else {
+                        document.getElementById("id_to_wallet").disabled = true;
+                        document.getElementById("id_to_wallet").value = null;
+
+                        // !!!!!!!! document.getElementById("id_currency2").value = document.getElementById("id_currency1").value;
+                        document.getElementById("id_currency2").disabled = false;
+                    }
+                }
+
+                function repeat_currency2(key) {
+                    document.getElementById("id_currency2").value = document.getElementById("id_currency1").value;
+                }
+                
+                // Сделал эту функцию, чтобы при нажатии на кнопку формы, все необходимые поля активировались, чтобы не заносить Null значения
+                function enable_all_fields() {
+                    document.getElementById("id_currency1").disabled = false;
+                }
+
+                function exhchanger() {
+
+                }
+
+                function change_currency1(key) {
+                    document.getElementById("id_currency1").disabled = true;
+                    document.getElementById("id_currency1").value = wallets_currency_dict[key];
+                }
+                
+                function change_currency2(key) {
+                    document.getElementById("id_currency2").disabled = true;
+                    document.getElementById("id_currency2").value = wallets_currency_dict[key];
+                }
+                
+                // Проверяет, если при категории "Перевод" указаны одинаковые счета, то выбивает юзеру типа варнинг
+                function transfer_check(that) {
+                    console.log('transfer_check: ') 
+                    if (document.getElementById("id_from_wallet").value === document.getElementById("id_to_wallet").value && document.getElementById("id_category").value === String({{ transfer_category }}) ) {
+                        alert('При переводе средств необходимо указывать разные счета. У вас должно быть более одного счёта.')
+                        console.log(that)
+                        console.log(document.getElementById("id_from_wallet"))
+                        console.log(document.getElementById("id_to_wallet"))
+                        if (document.getElementById("id_from_wallet").name === that.name) {
+                            document.getElementById("id_from_wallet").value = null
+                        }
+                        if (document.getElementById("id_to_wallet").name === that.name) {
+                            document.getElementById("id_to_wallet").value = null
+                        }
+                    } 
+                }
+                
                 // Делает поле amount2 активным или неактивным, если произошло изменение в одной из валют.
                 // Если валюты разные, то поле amount2 активируется, а если одинаковые, то это поле не нужно
                 function same_or_not_currencies() {
                     if ( document.getElementById("id_currency1").value === document.getElementById("id_currency2").value ) {
                         document.getElementById("id_amount2").disabled = true;
+                        document.getElementById("id_exchange_rate").disabled = true;
                         change_amount2_by_amount1();
                     } else {
                         document.getElementById("id_amount2").disabled = false;
+                        document.getElementById("id_exchange_rate").disabled = false;
                     }
                 }
 
@@ -54,15 +116,10 @@
                     }
                 }
 
-
-
-                // Активирует или деактивирует поле "to_wallet".
-                // Если выбрана категория "Переводы", то активирует. Если другая, то деактивирует.
-                function enable_or_disable_wallet2(value) {
-                    if (Number(value) === {{ transfer_category }} ) {
-                        document.getElementById("id_to_wallet").disabled = false;
-                    } else {
-                        document.getElementById("id_to_wallet").disabled = true;
+                // Если валюты 1 и 2 одинаковые, то автоматически присваивает в amount1 значение amount2
+                function change_amount1_by_amount2() {
+                    if ( document.getElementById("id_currency1").value === document.getElementById("id_currency2").value ) {
+                        document.getElementById("id_amount1").value = document.getElementById("id_amount2").value
                     }
                 }
             </script>

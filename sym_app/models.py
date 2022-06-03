@@ -93,7 +93,7 @@ class Operation(models.Model):
                                   db_column='to_wallet')
     
     currency1 = models.ForeignKey('Currency',
-                                  verbose_name='Валюта списания',
+                                  verbose_name='Валюта',
                                   on_delete=models.PROTECT,
                                   related_name='currency1')
     

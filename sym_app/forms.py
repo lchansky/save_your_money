@@ -60,31 +60,32 @@ class OperationNewForm(forms.ModelForm):
             'updated_at': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'from_wallet': forms.Select(attrs={
                 'class': 'form-select',
-                'onchange': 'transfer_check(this), change_currency1(this.value), repeat_currency2()'}),
-            'category': forms.Select(attrs={'class': 'form-select', 'onchange': 'choice_transfer()'}),
+                'onchange': 'transfer_check(this), change_currency1(this.value), rates(), same_or_not_currencies()'}),
+            'category': forms.Select(attrs={'class': 'form-select fs-6', 'onchange': 'if_transfer()'}),
             'to_wallet': forms.Select(attrs={
                 'class': 'form-select',
                 'disabled': '',
-                'onchange': 'transfer_check(this), change_currency2(this.value)'}),
-            'currency1': forms.Select(attrs={'class': 'form-select', 'onchange': 'same_or_not_currencies()', 'disable': ''}),
+                'onchange': 'transfer_check(this), change_currency2(this.value), rates(), same_or_not_currencies()'}),
+            'currency1': forms.Select(attrs={'class': 'form-select', 'onchange': 'rates(), same_or_not_currencies()', 'disable': ''}),
             'amount1': forms.NumberInput(attrs={'class': 'form-control', 'onchange': 'change_amount2_by_amount1()'}),
-            'exchange_rate': forms.NumberInput(attrs={'class': 'form-control', 'onchange': 'exchanger()', 'disabled': ''}),
-            'currency2': forms.Select(attrs={'class': 'form-select', 'onchange': 'same_or_not_currencies()'}),
+            'exchange_rate': forms.NumberInput(attrs={'class': 'form-control', 'disabled': ''}),
+            'currency2': forms.Select(attrs={'class': 'form-select', 'onchange': 'rates(), same_or_not_currencies()'}),
             'amount2': forms.NumberInput(attrs={'class': 'form-control', 'disabled': '', 'onchange': 'change_amount1_by_amount2()'}),
             'description': forms.TextInput(attrs={'class': 'form-control'})
         }
         labels = {
             'from_wallet': 'Счёт',
-            'to_wallet': 'Счёт получения'
+            'to_wallet': 'Счёт (перевод)',
+            'amount1': 'Сумма'
         }
         
         help_texts = {
-            'to_wallet':  'Чтобы перевести деньги со счёта на счёт, выберите категорию "Переводы"'
+            'category':  'Для перевода между счетами выберите категорию "Переводы"'
         }
     
     def clean_currency1(self):
         data = self.cleaned_data
-        if data['currency1'] != data['from_wallet'].currency:
+        if data['from_wallet'] and data['currency1'] != data['from_wallet'].currency:
             raise ValidationError(f"""Ошибка. Валюта списания со счёта "{data["from_wallet"]}" не совпадает
             c валютой самого счёта. Укажите валюту списания {data["from_wallet"].currency}.""")
         return data['currency1']
@@ -92,11 +93,11 @@ class OperationNewForm(forms.ModelForm):
     # Кастомная валидация, срабатывает автоматически для поля currency1
     def clean_currency2(self):
         data = self.cleaned_data
-        if not data['currency2']:
-            if data['category'].type_of == 'transfer':
-                data['currency2'] = data['to_wallet'].currency
-            else:
-                data['currency2'] = data['from_wallet'].currency
+        # if not data['currency2']:
+        #     if data['category'].type_of == 'transfer' and data['to_wallet']:
+        #         data['currency2'] = data['to_wallet'].currency
+        #     else:
+        #         data['currency2'] = data['from_wallet'].currency
                 
         if 'to_wallet' in data.keys() and data['to_wallet'] and data['currency2'] != data['to_wallet'].currency:
             raise ValidationError(f"""Ошибка. Валюта получения перевода на счёт "{data["to_wallet"]}" не совпадает
@@ -114,17 +115,19 @@ class OperationNewForm(forms.ModelForm):
     def clean_to_wallet(self):
         data = self.cleaned_data
         if data['category'].type_of == 'transfer':
+            if ('from_wallet' not in data.keys()) or ('to_wallet' not in data.keys() or (not data['to_wallet']) or (not data['from_wallet'])):
+                raise ValidationError('Ошибка. Для перевода нужно указать два счёта. Пожалуйста, укажите счета.')
             if data['from_wallet'] == data['to_wallet']:
                 raise ValidationError('Ошибка. Для перевода нужно указать разные счета. Пожалуйста, выберите другой счёт.')
-            if not (data['from_wallet'] and data['to_wallet']):
-                raise ValidationError('Ошибка. Для перевода нужно указать два счёта. Пожалуйста, укажите счета.')
         else:
             data['to_wallet'] = None
         return data['to_wallet']
     
     def clean_exchange_rate(self):
         data = self.cleaned_data
-        if not data['exchange_rate']:
+        if 'amount2' in data.keys():
+            data['exchange_rate'] = data['amount1'] / data['amount2']
+        else:
             data['exchange_rate'] = 1
         return data['exchange_rate']
 

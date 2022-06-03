@@ -211,7 +211,7 @@ def operation_edit(request, pk):
     with open('exchange_rates_pks.json', 'r') as file:
         exchange_rates_pks = file.read()
     context = {'form': form,
-               'title': 'Изменение операции',
+               'title': 'Редактирование операции',
                'operation': operation,
                'transfer_category': Category.objects.get(user=request.user, type_of='transfer').pk,
                'wallets_currency_dict': wallets_currency_dict,

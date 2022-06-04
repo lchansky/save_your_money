@@ -13,7 +13,7 @@
         <div class="card-header">
             <div class="d-flex w-100 justify-content-between">
                 <div class="fs-3 fw-bold">{{ wallet.name }}</div>
-                <div class="fs-4">Баланс: {{ wallet.balance }} {{ wallet.currency }}</div>
+                <div class="fs-4">Баланс: {{ wallet.balance|floatformat:"-2" }} {{ wallet.currency }}</div>
             </div>
         </div>
         
@@ -27,6 +27,6 @@
     </div>
 {% endfor %}
 
-<p><a href="#" class="btn btn-primary btn-lg">Добавить счёт</a></p>
+<p><a href="{% url 'wallet_new' %}" class="btn btn-primary btn-lg">Добавить счёт</a></p>
 
 {% endblock %}

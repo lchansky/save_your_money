@@ -11,47 +11,58 @@
 <br>
 
 {% if operation.user == request.user %}
-<div class="list-group-item list-group-item text-start fs-4" style="max-width:500px;">
-    
-    <table class="table">
+<div class="list-group-item list-group-item text-start fs-4" style="max-width:600px;">
+    <table class="table" style="max-width:600px;">
         <tbody>
         <tr>
-            <td>Дата и время</td>
-            <td class="fs-5"><a href="{% url 'operations' %}?date_from={{ operation.updated_at|date:'Y-m-d' }}&date_to={{ operation.updated_at|date:'Y-m-d' }}">{{ operation.updated_at|date }}</a> {{ operation.updated_at|time }}</td>
+            <td style="width: 50%">Дата и время</td>
+            <td style="width: 50%" class="fs-5">
+                <a href="{% url 'operations' %}?date_from={{ operation.updated_at|date:'Y-m-d' }}&date_to={{ operation.updated_at|date:'Y-m-d' }}">{{ operation.updated_at|date }}</a> {{ operation.updated_at|time }}
+            </td>
         </tr>
         <tr>
-            <td>Категория</td>
-            <td class="fs-5"><a href="{% url 'operations' %}?category={{ operation.category.pk }}">{{ operation.category }}</a></td>
+            <td style="width: 50%">Категория</td>
+            <td style="width: 50%" class="fs-5"><a href="{% url 'operations' %}?category={{ operation.category.pk }}">{{ operation.category }}</a></td>
         </tr>
         <tr>
-            <td>Со счёта</td>
-            <td class="fs-5"><a href="{% url 'operations' %}?wallet={{ operation.from_wallet.pk }}">{{ operation.from_wallet }}</a></td>
+            <td style="width: 50%">Со счёта</td>
+            <td style="width: 50%" class="fs-5"><a href="{% url 'operations' %}?wallet={{ operation.from_wallet.pk }}">{{ operation.from_wallet.name }}</a></td>
         </tr>
         
         {% if operation.to_wallet %}
             <tr>
-                <td>На счёт</td>
-                <td class="fs-5"><a href="{% url 'operations' %}?wallet={{ operation.to_wallet.pk }}">{{ operation.to_wallet }}</a></td>
+                <td style="width: 50%">На счёт</td>
+                <td style="width: 50%" class="fs-5">
+                    <a href="{% url 'operations' %}?wallet={{ operation.to_wallet.pk }}">
+                        {{ operation.to_wallet.name }}
+                    </a>
+                </td>
             </tr>
         {% endif %}
         
         <tr>
-            <td>Сумма списания</td>
-            <td class="fs-5">{{ operation.amount1 }} {{ operation.currency1 }}</td>
+            <td style="width: 50%">Сумма списания</td>
+            <td style="width: 50%" class="fs-5">{{ operation.amount1 }} {{ operation.currency1 }}</td>
         </tr>
         
         {% if operation.currency1 != operation.currency2 %}
             <tr>
-                <td>Сумма платежа</td>
-                <td class="fs-5">{{ operation.amount2 }} {{ operation.currency2 }}</td>
+                <td style="width: 50%">Сумма платежа</td>
+                <td style="width: 50%" class="fs-5">{{ operation.amount2 }} {{ operation.currency2 }}</td>
             </tr>
         {% endif %}
         
         <tr>
-            <td>Описание</td>
-            <td class="fs-5">{{ operation.description }}</td>
+            <td style="width: 50%">Описание</td>
+            <td style="width: 50%" class="fs-5">
+                {% if operation.description|length > 40 %}
+                    <div class="fs-6">{{ operation.description }}</div>
+                {% else %}
+                    {{ operation.description }}
+                {% endif %}
+            </td>
         </tr>
-        
+        </tbody>
     </table>
     
     <div class="hstack gap-3">

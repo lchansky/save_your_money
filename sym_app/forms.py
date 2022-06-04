@@ -1,4 +1,5 @@
 import re
+from pprint import pprint
 
 from django.contrib.auth import get_user, get_user_model
 from django.contrib.auth.middleware import AuthenticationMiddleware
@@ -82,15 +83,39 @@ class OperationNewForm(forms.ModelForm):
         help_texts = {
             'category':  'Для перевода между счетами выберите категорию "Переводы"'
         }
-    
+
+    # Кастомная валидация, срабатывает автоматически для поля currency1
     def clean_currency1(self):
         data = self.cleaned_data
         if data['from_wallet'] and data['currency1'] != data['from_wallet'].currency:
             raise ValidationError(f"""Ошибка. Валюта списания со счёта "{data["from_wallet"]}" не совпадает
             c валютой самого счёта. Укажите валюту списания {data["from_wallet"].currency}.""")
         return data['currency1']
+
+    # Кастомная валидация, срабатывает автоматически для поля amount1
+    def clean_amount1(self):
+        data = self.cleaned_data
+        if data['category'].type_of == 'transfer' and data['amount1'] <= 0:
+            raise ValidationError(
+                f'Ошибка. При переводе суммы должны быть больше нуля. Пожалуйста, введите корректные значения')
+        return data['amount1']
+
+    # Кастомная валидация, срабатывает автоматически для поля amount2
+    def clean_amount2(self):
+        data = self.cleaned_data
+        if 'amount2' not in data.keys():
+            data['amount2'] = data['amount1']
+        if data['category'].type_of == 'transfer' and data['amount2'] <= 0:
+            raise ValidationError(
+                f'Ошибка. При переводе суммы должны быть больше нуля. Пожалуйста, введите корректные значения')
+        return data['amount2']
+
+    def clean_exchange_rate(self):
+        data = self.cleaned_data
+        data['exchange_rate'] = self.clean_amount1() / self.clean_amount2()
+        return data['exchange_rate']
     
-    # Кастомная валидация, срабатывает автоматически для поля currency1
+    # Кастомная валидация, срабатывает автоматически для поля currency2
     def clean_currency2(self):
         data = self.cleaned_data
         # if not data['currency2']:
@@ -98,38 +123,25 @@ class OperationNewForm(forms.ModelForm):
         #         data['currency2'] = data['to_wallet'].currency
         #     else:
         #         data['currency2'] = data['from_wallet'].currency
-                
+        
         if 'to_wallet' in data.keys() and data['to_wallet'] and data['currency2'] != data['to_wallet'].currency:
             raise ValidationError(f"""Ошибка. Валюта получения перевода на счёт "{data["to_wallet"]}" не совпадает
             c валютой самого счёта. Укажите "Валюту платежа" {data["to_wallet"].currency}.""")
         return data['currency2']
-
-    # Кастомная валидация, срабатывает автоматически для поля currency2
-    def clean_amount2(self):
-        data = self.cleaned_data
-        if 'amount2' not in data.keys():
-            data['amount2'] = data['amount1']
-        return data['amount2']
     
-    # Кастомная валидация, срабатывает если указана категория "Перевод"
     def clean_to_wallet(self):
         data = self.cleaned_data
         if data['category'].type_of == 'transfer':
-            if ('from_wallet' not in data.keys()) or ('to_wallet' not in data.keys() or (not data['to_wallet']) or (not data['from_wallet'])):
+            if ('from_wallet' not in data.keys() or 'to_wallet' not in data.keys()
+                    or not data['to_wallet'] or not data['from_wallet']):
                 raise ValidationError('Ошибка. Для перевода нужно указать два счёта. Пожалуйста, укажите счета.')
             if data['from_wallet'] == data['to_wallet']:
-                raise ValidationError('Ошибка. Для перевода нужно указать разные счета. Пожалуйста, выберите другой счёт.')
+                raise ValidationError(
+                    'Ошибка. Для перевода нужно указать разные счета. Пожалуйста, выберите другой счёт.')
         else:
             data['to_wallet'] = None
         return data['to_wallet']
     
-    def clean_exchange_rate(self):
-        data = self.cleaned_data
-        if 'amount2' in data.keys():
-            data['exchange_rate'] = data['amount1'] / data['amount2']
-        else:
-            data['exchange_rate'] = 1
-        return data['exchange_rate']
 
 
 class OperationEditForm(OperationNewForm):

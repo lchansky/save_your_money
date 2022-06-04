@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models import F
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
@@ -36,10 +37,22 @@ class Wallet(models.Model):
     is_archive = models.BooleanField(verbose_name='Архивный счёт?', blank=True, default=False)
     
     def __str__(self):
-        return f'{self.name} ({self.currency})'
+        return f'{self.name} ({round(self.balance, 2)} {self.currency})'
 
     def get_absolute_url(self):
         return reverse('wallet_detail', kwargs={'pk': self.pk})
+    
+    def inc_balance(self, amount: float):
+        """Принимает float. Увеличивает баланс кошелька. Записывает изменения в БД."""
+        amount = float(amount)
+        Wallet.objects.filter(pk=self.pk).update(balance=F('balance')+amount)
+        print(f'Кошелёк id={self.pk} пользователя {self.user}: '
+              f'Баланс изменен на {amount} {self.currency}. Текущий баланс {self.balance} {self.currency}')
+        return amount
+    
+    def dec_balance(self, amount: float):
+        """Принимает float. Уменьшает баланс кошелька. Записывает изменения в БД."""
+        return self.inc_balance(-amount)
 
     class Meta:
         verbose_name = 'Счёт'
@@ -108,9 +121,7 @@ class Operation(models.Model):
                                   default=None,
                                   related_name='currency2')
     
-    amount2 = models.FloatField(verbose_name='Сумма платежа',
-                                blank=True,
-                                default=None)
+    amount2 = models.FloatField(verbose_name='Сумма платежа')
 
     description = models.CharField(max_length=150, verbose_name='Описание операции', blank=True)
     

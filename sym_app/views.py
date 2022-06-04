@@ -168,7 +168,27 @@ class OperationDetail(LoginRequiredMixin, DetailView):
 @login_required(login_url='about')
 @check_permissions(model=Operation, redirect_page='operations')
 def operation_delete(request, pk):
-    Operation.objects.get(pk=pk).delete()
+    operation = Operation.objects.get(pk=pk)
+
+    # Сбор параметров операции для изменения балансов (ниже)
+    from_wallet_old = operation.from_wallet
+    to_wallet_old = operation.to_wallet
+    type_of_old = operation.category.type_of
+    amount1_old = operation.amount1
+    amount2_old = operation.amount2
+    
+    # Удаление операции
+    operation.delete()
+
+    # Откат балансов
+    if type_of_old == 'pay':
+        from_wallet_old.inc_balance(amount1_old)
+    elif type_of_old == 'earn':
+        from_wallet_old.dec_balance(amount1_old)
+    elif type_of_old == 'transfer':
+        from_wallet_old.inc_balance(amount1_old)
+        to_wallet_old.dec_balance(amount2_old)
+        
     messages.success(request, 'Операция успешно удалена')
     return redirect('home')
 
@@ -183,11 +203,43 @@ def operation_edit(request, pk):
         if form.is_valid():
             data = form.cleaned_data
             data['user_id'] = request.user.id
-            if not data['currency2'] or not data['amount2']:
-                data['currency2'] = data['currency1']
-                data['amount2'] = data['amount1']
+            data['amount1'] = form.clean_amount1()
+            data['amount2'] = form.clean_amount2()
+            data['exchange_rate'] = form.clean_exchange_rate()
+            data['to_wallet'] = form.clean_to_wallet()
+            data['currency1'] = form.clean_currency1()
+            data['currency2'] = form.clean_currency2()
+            
+            # Сбор параметров операции для изменения балансов (ниже)
+            from_wallet_old = operation.from_wallet
+            to_wallet_old = operation.to_wallet
+            type_of_old = operation.category.type_of
+            amount1_old = operation.amount1
+            amount2_old = operation.amount2
+            
+            # Сохранение в БД изменённой операции
             Operation.objects.filter(pk=pk).update(**data)
             print('Изменена операция:', operation)
+
+            # Откат балансов (как будто удаление операции)
+            if type_of_old == 'pay':
+                from_wallet_old.inc_balance(amount1_old)
+            elif type_of_old == 'earn':
+                from_wallet_old.dec_balance(amount1_old)
+            elif type_of_old == 'transfer':
+                from_wallet_old.inc_balance(amount1_old)
+                to_wallet_old.dec_balance(amount2_old)
+            
+            # Изменение балансов с параметрами новой (т.е. измененной операции).
+            # То есть как будто удалили старую операцию и добавили новую
+            if data['category'].type_of == 'pay':
+                data['from_wallet'].dec_balance(data['amount1'])
+            elif data['category'].type_of == 'earn':
+                data['from_wallet'].inc_balance(data['amount1'])
+            elif data['category'].type_of == 'transfer':
+                data['from_wallet'].dec_balance(data['amount1'])
+                data['to_wallet'].inc_balance(data['amount2'])
+            
             messages.success(request, 'Изменения сохранены')
             return redirect(operation.get_absolute_url())
     else:
@@ -229,10 +281,25 @@ def operation_new(request):
         if form.is_valid():
             data = form.cleaned_data
             data['user_id'] = request.user.id
-            if not data['currency2'] or not data['amount2']:
-                data['currency2'] = data['currency1']
-                data['amount2'] = data['amount1']
+            data['amount1'] = form.clean_amount1()
+            data['amount2'] = form.clean_amount2()
+            data['exchange_rate'] = form.clean_exchange_rate()
+            data['to_wallet'] = form.clean_to_wallet()
+            data['currency1'] = form.clean_currency1()
+            data['currency2'] = form.clean_currency2()
+            
+            # Создание записи в БД
             operation = Operation.objects.create(**data)
+            
+            # Изменение балансов кошельков
+            if data['category'].type_of == 'pay':
+                data['from_wallet'].dec_balance(data['amount1'])
+            elif data['category'].type_of == 'earn':
+                data['from_wallet'].inc_balance(data['amount1'])
+            elif data['category'].type_of == 'transfer':
+                data['from_wallet'].dec_balance(data['amount1'])
+                data['to_wallet'].inc_balance(data['amount2'])
+            
             print('Новая операция:', operation)
             messages.success(request, 'Операция добавлена')
             return redirect('home')

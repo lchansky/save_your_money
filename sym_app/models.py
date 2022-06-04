@@ -144,7 +144,7 @@ class Profile(models.Model):
     budget = models.BooleanField(blank=True, default=False, verbose_name='Режим "бюджет" (в разработке...)')
 
     def __str__(self):
-        return self.objects.get(pk=self.kwargs['user'])
+        return f'Профиль пользователя {self.user}'
 
     class Meta:
         verbose_name = 'Настройки пользователя'

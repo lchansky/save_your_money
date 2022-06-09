@@ -1,8 +1,6 @@
 from django.contrib import messages
 from django.shortcuts import redirect
 
-from .models import *
-
 
 def check_permissions(model, redirect_page='home'):
     """Декоратор, кидает message.error и redirect на redirect_page, если объект модели model

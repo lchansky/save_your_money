@@ -29,6 +29,11 @@
             <td style="width: 50%" class="fs-5"><a href="{% url 'operations' %}?wallet={{ operation.from_wallet.pk }}">{{ operation.from_wallet.name }}</a></td>
         </tr>
         
+        <tr>
+            <td style="width: 50%">Сумма {% if operation.category.type_of == 'earn' %}получения{% else %}списания{% endif %}</td>
+            <td style="width: 50%" class="fs-5">{{ operation.amount1 }} {{ operation.currency1 }}</td>
+        </tr>
+        
         {% if operation.to_wallet %}
             <tr>
                 <td style="width: 50%">На счёт</td>
@@ -40,18 +45,17 @@
             </tr>
         {% endif %}
         
-        <tr>
-            <td style="width: 50%">Сумма списания</td>
-            <td style="width: 50%" class="fs-5">{{ operation.amount1 }} {{ operation.currency1 }}</td>
-        </tr>
-        
         {% if operation.currency1 != operation.currency2 %}
             <tr>
-                <td style="width: 50%">Сумма платежа</td>
+                <td style="width: 50%">Курс обмена</td>
+                <td style="width: 50%" class="fs-5">{{ operation.exchange_rate|floatformat:"-5" }}</td>
+            </tr>
+            <tr>
+                <td style="width: 50%">Сумма {% if operation.category.type_of == 'transfer' %}получения{% else %}платежа{% endif %}</td>
                 <td style="width: 50%" class="fs-5">{{ operation.amount2 }} {{ operation.currency2 }}</td>
             </tr>
         {% endif %}
-        
+
         <tr>
             <td style="width: 50%">Описание</td>
             <td style="width: 50%" class="fs-5">
@@ -67,6 +71,8 @@
     
     <div class="hstack gap-3">
         <a href="{% url 'operation_edit' operation.pk %}" class="col btn btn-outline-primary btn-lg">Редактировать</a>
+        <div class="vr"></div>
+        <a href="{% url 'operation_duplicate' operation.pk %}" class="col btn btn-outline-success btn-lg">Дублировать</a>
         <div class="vr"></div>
         <button class="col btn btn-outline-danger btn-lg" onclick="delete_item()">Удалить</button>
     </div>

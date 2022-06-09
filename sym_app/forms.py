@@ -18,11 +18,18 @@ class UserLoginForm(AuthenticationForm):
 
 
 class UserRegisterForm(UserCreationForm):
-    username = forms.CharField(label='Имя пользователя', widget=forms.TextInput(attrs={'class': 'form-control'}))
+    username = forms.CharField(label='Имя пользователя',
+                               widget=forms.TextInput(attrs={'class': 'form-control'}),
+                               help_text='Обязательное поле. Не более 150 символов. Только буквы, цифры и символы @/./+/-/_.')
     email = forms.EmailField(widget=forms.EmailInput(attrs={'class': 'form-control'}))
-    password1 = forms.CharField(label='Пароль', widget=forms.PasswordInput(attrs={'class': 'form-control'}))
-    password2 = forms.CharField(label='Подтверждения пароля', widget=forms.PasswordInput(attrs={'class': 'form-control'}))
-    
+    password1 = forms.CharField(label='Пароль',
+                                widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+                                help_text="""Минимум 8 символов.
+                                             Пароль не должен содержать вашу личную информацию,
+                                             не должен быть слишком простым, не должен состоять только из цифр.""")
+    password2 = forms.CharField(label='Подтверждения пароля',
+                                widget=forms.PasswordInput(attrs={'class': 'form-control'}))
+
     class Meta:
         model = User
         fields = ('username', 'email', 'password1', 'password2')
@@ -87,7 +94,7 @@ class OperationNewForm(forms.ModelForm):
     # Кастомная валидация, срабатывает автоматически для поля currency1
     def clean_currency1(self):
         data = self.cleaned_data
-        if data['from_wallet'] and data['currency1'] != data['from_wallet'].currency:
+        if data.get('from_wallet', False) and data['currency1'] != data['from_wallet'].currency:
             raise ValidationError(f"""Ошибка. Валюта списания со счёта "{data["from_wallet"]}" не совпадает
             c валютой самого счёта. Укажите валюту списания {data["from_wallet"].currency}.""")
         return data['currency1']
@@ -95,7 +102,7 @@ class OperationNewForm(forms.ModelForm):
     # Кастомная валидация, срабатывает автоматически для поля amount1
     def clean_amount1(self):
         data = self.cleaned_data
-        if data['category'].type_of == 'transfer' and data['amount1'] <= 0:
+        if data['category'].type_of == 'transfer' and data.get('amount1', 0) <= 0:
             raise ValidationError(
                 f'Ошибка. При переводе суммы должны быть больше нуля. Пожалуйста, введите корректные значения')
         return data['amount1']
@@ -104,8 +111,8 @@ class OperationNewForm(forms.ModelForm):
     def clean_amount2(self):
         data = self.cleaned_data
         if 'amount2' not in data.keys():
-            data['amount2'] = data['amount1']
-        if data['category'].type_of == 'transfer' and data['amount2'] <= 0:
+            data['amount2'] = self.clean_amount1()
+        if data['category'].type_of == 'transfer' and data.get('amount2', 0) <= 0:
             raise ValidationError(
                 f'Ошибка. При переводе суммы должны быть больше нуля. Пожалуйста, введите корректные значения')
         return data['amount2']
@@ -158,6 +165,10 @@ class WalletNewForm(forms.ModelForm):
             'balance': forms.NumberInput(attrs={'class': 'form-control'}),
             'currency': forms.Select(attrs={'class': 'form-select'}),
         }
+        help_texts = {
+            'name': 'Например: "Долларовый счёт в банке", "Карта VISA" или "Заначка"',
+            'balance': 'Введите актуальный баланс вашего счёта'
+        }
 
 
 class WalletEditForm(forms.ModelForm):
@@ -169,6 +180,9 @@ class WalletEditForm(forms.ModelForm):
             'balance': forms.NumberInput(attrs={'class': 'form-control'}),
             'currency': forms.Select(attrs={'class': 'form-select'}),
             'is_archive': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        help_texts = {
+            'currency':  'Смена валюты счёта не затронет старые операции'
         }
 
 
@@ -190,18 +204,20 @@ class CategoryNewForm(forms.ModelForm):
 
 class CategoryEditForm(forms.ModelForm):
     
-    def __init__(self, *args, **kwargs):
-        super(CategoryEditForm, self).__init__(*args, **kwargs)
-        self.fields['type_of'].queryset = ('Расходы', 'Доходы')
+    # def __init__(self, *args, **kwargs):
+    #     super(CategoryEditForm, self).__init__(*args, **kwargs)
+    #     self.fields['type_of'].queryset = ('Расходы', 'Доходы')
         
     class Meta:
         model = Category
         fields = ('name', 'type_of', 'is_budget', 'budget_amount', 'is_archive',)
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'type_of': forms.Select(attrs={'class': 'form-select'}),
+            'type_of': forms.TextInput(attrs={'class': 'form-control', 'hidden': ''}),
             'is_budget': forms.CheckboxInput(
                 attrs={'class': 'form-check-input', 'onchange': 'active_disable_budget()'}),
             'budget_amount': forms.NumberInput(attrs={'class': 'form-control', 'disabled': ''}),
             'is_archive': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+        help_texts = {'type_of': ''}
+        labels = {'type_of': ''}

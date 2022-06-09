@@ -116,7 +116,8 @@ class HomeOperations(LoginRequiredMixin, ListView):
         
         kwargs['description'] = self.request.GET.get('description', False)
         if kwargs['description']:
-            q = q & Q(description__icontains=kwargs['description'])  # чувствителен к регистру из-за особенностей SQlite
+            q = q & Q(description__icontains=kwargs['description'])
+            # Чувствителен к регистру из-за SQlite. В других бд норм
         
         kwargs['date_from'] = self.request.GET.get('date_from', False)
         if kwargs['date_from']:
@@ -191,6 +192,69 @@ def operation_delete(request, pk):
         
     messages.success(request, 'Операция успешно удалена')
     return redirect('home')
+
+
+@login_required(login_url='about')
+@check_permissions(model=Operation, redirect_page='operations')
+def operation_duplicate(request, pk):
+    operation = Operation.objects.get(pk=pk)
+    
+    if request.method == 'POST':
+        form = OperationNewForm(data=request.POST, request=request)
+        if form.is_valid():
+            data = form.cleaned_data
+            data['user_id'] = request.user.id
+            data['amount1'] = form.clean_amount1()
+            data['amount2'] = form.clean_amount2()
+            data['exchange_rate'] = form.clean_exchange_rate()
+            data['to_wallet'] = form.clean_to_wallet()
+            data['currency1'] = form.clean_currency1()
+            data['currency2'] = form.clean_currency2()
+
+            # Создание записи в БД
+            created_operation = Operation.objects.create(**data)
+
+            # Изменение балансов кошельков
+            if data['category'].type_of == 'pay':
+                data['from_wallet'].dec_balance(data['amount1'])
+            elif data['category'].type_of == 'earn':
+                data['from_wallet'].inc_balance(data['amount1'])
+            elif data['category'].type_of == 'transfer':
+                data['from_wallet'].dec_balance(data['amount1'])
+                data['to_wallet'].inc_balance(data['amount2'])
+            
+            messages.success(request, 'Операция добавлена')
+            return redirect(created_operation.get_absolute_url())
+    else:
+        # Добавляю дельту таймзоны, т.к. в БД время в UTC.
+        dt_with_tz = operation.updated_at.astimezone(tz=pytz.timezone(TIME_ZONE))
+        
+        form = OperationNewForm(request=request, initial={
+            'updated_at': dt_with_tz.strftime('%Y-%m-%dT%H:%M'),  # HTML понимает только формат 'yyyy-mm-ddThh:mm'
+            'from_wallet': operation.from_wallet,
+            'category': operation.category,
+            'to_wallet': operation.to_wallet,
+            'currency1': operation.currency1,
+            'amount1': operation.amount1,
+            'currency2': operation.currency2,
+            'amount2': operation.amount2,
+            'description': operation.description,
+        })
+    
+    wallets_currency_dict = {wallet.pk: wallet.currency.pk
+                             for wallet in Wallet.objects.filter(user=request.user)}
+    with open('exchange_rates_pks.json', 'r') as file:
+        exchange_rates_pks = file.read()
+    context = {'form': form,
+               'title': 'Добавление операции',
+               'operation': operation,
+               'transfer_category': Category.objects.get(user=request.user, type_of='transfer').pk,
+               'wallets_currency_dict': wallets_currency_dict,
+               'exchange_rates_pks': exchange_rates_pks,
+               }
+    context.update(universal_context(request))
+    
+    return render(request, 'sym_app/operation_duplicate.html', context)
 
 
 @login_required(login_url='about')
@@ -289,7 +353,7 @@ def operation_new(request):
             data['currency2'] = form.clean_currency2()
             
             # Создание записи в БД
-            operation = Operation.objects.create(**data)
+            created_operation = Operation.objects.create(**data)
             
             # Изменение балансов кошельков
             if data['category'].type_of == 'pay':
@@ -300,11 +364,12 @@ def operation_new(request):
                 data['from_wallet'].dec_balance(data['amount1'])
                 data['to_wallet'].inc_balance(data['amount2'])
             
-            print('Новая операция:', operation)
+            print('Новая операция:', created_operation)
             messages.success(request, 'Операция добавлена')
             return redirect('home')
     else:
-        form = OperationNewForm(request=request, initial={'from_wallet': Wallet.objects.filter(user=request.user).first()})
+        form = OperationNewForm(request=request,
+                                initial={'from_wallet': Wallet.objects.filter(user=request.user).first()})
 
     wallets_currency_dict = {wallet.pk: wallet.currency.pk
                              for wallet in Wallet.objects.filter(user=request.user)}
@@ -325,9 +390,10 @@ def operation_new(request):
 def universal_context(request):
     """Принимает запрос и контекст, добавляет к контексту те переменные, которые используются на каждой странице.
     Например, на navbar используется"""
-    extra_context = {}
-    extra_context['optional_name'] = Profile.objects.get(user=request.user).name
-    extra_context['wallets'] = Wallet.objects.filter(user=request.user)
+    extra_context = {
+        'optional_name': Profile.objects.get(user=request.user).name,
+        'wallets': Wallet.objects.filter(user=request.user),
+    }
     return extra_context
 
 
@@ -529,7 +595,7 @@ def category_new(request):
     
     context = {'form': form,
                'title': 'Добавление категории',
-               'types': ('pay', 'earn')
+               'types': ('pay', 'earn'),
                }
     context.update(universal_context(request))
     
@@ -557,10 +623,12 @@ def category_edit(request, pk):
                                          'budget_amount': category.budget_amount,
                                          'is_archive': category.is_archive,
                                          })
-    
     context = {'form': form,
                'title': 'Изменение категории',
                'category': category,
+               'types': ('pay', 'earn'),
+               'checkbox_pay': category.type_of == 'pay',
+               'checkbox_earn': category.type_of == 'earn',
                }
     context.update(universal_context(request))
     
@@ -649,7 +717,8 @@ def update_currencies(request):
     currencies = Currency.objects.all()
     for currency in currencies:  # берём по одной валюте из БД
         if currency.name in CODES.keys() and currency.exchange_to in CODES.keys():
-            converted = json.loads(convert(currency.name, currency.exchange_to, 1000)) # 1000 для точности, больше знаков после запятой
+            converted = json.loads(convert(currency.name, currency.exchange_to, 1000))
+            # 1000 для точности, больше знаков после запятой
             currency.exchange_rate = float(converted['amount']) / 1000
             currency.exchange_rate_reverse = 1000 / float(converted['amount'])
             currency.save()

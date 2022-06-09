@@ -34,7 +34,7 @@ class Wallet(models.Model):
     name = models.CharField(max_length=150, verbose_name='Название счёта')
     balance = models.FloatField(default=0, verbose_name='Баланс')
     currency = models.ForeignKey('Currency', verbose_name='Валюта', on_delete=models.PROTECT)
-    is_archive = models.BooleanField(verbose_name='Архивный счёт?', blank=True, default=False)
+    is_archive = models.BooleanField(verbose_name='Архивный (в разработке)', blank=True, default=False)
     
     def __str__(self):
         return f'{self.name} ({round(self.balance, 2)} {self.currency})'
@@ -45,9 +45,10 @@ class Wallet(models.Model):
     def inc_balance(self, amount: float):
         """Принимает float. Увеличивает баланс кошелька. Записывает изменения в БД."""
         amount = float(amount)
+        old_balance = self.balance
         Wallet.objects.filter(pk=self.pk).update(balance=F('balance')+amount)
         print(f'Кошелёк id={self.pk} пользователя {self.user}: '
-              f'Баланс изменен на {amount} {self.currency}. Текущий баланс {self.balance} {self.currency}')
+              f'Баланс изменен на {amount} {self.currency}. Текущий баланс {old_balance+amount} {self.currency}')
         return amount
     
     def dec_balance(self, amount: float):
@@ -57,7 +58,7 @@ class Wallet(models.Model):
     class Meta:
         verbose_name = 'Счёт'
         verbose_name_plural = 'Счета'
-        ordering = ['user', 'pk']
+        ordering = ['user', '-pk']
 
 
 class Category(models.Model):

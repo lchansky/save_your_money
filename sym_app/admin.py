@@ -9,9 +9,9 @@ class ProfileAdmin(admin.ModelAdmin):
     
     
 class CurrencyAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'name', 'exchange_to', 'exchange_rate')
+    list_display = ('pk', 'name', 'exchange_to', 'exchange_rate', 'exchange_rate_reverse')
     list_display_links = ('pk', 'name')
-    search_fields = ('name', 'exchange_to')
+    search_fields = ('name', 'exchange_to', 'exchange_rate_reverse')
     ordering = ['pk']
     
 

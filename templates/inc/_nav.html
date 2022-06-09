@@ -23,15 +23,19 @@
                         Операции
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        
+                        <li><a class="dropdown-item" href="{% url 'operation_new' %}" style="background-color: #0083ff; color:white;">Добавить операцию</a></li>
+                        
+                        <li><hr class="dropdown-divider"></li>
+                        
+                        <li><a class="dropdown-item" href="{% url 'operations' %}">Все операции</a></li>
+                        
+                        <li><hr class="dropdown-divider"></li>
+                        
                         <li><a class="dropdown-item" href="{% url 'operations' %}?type_of=pay">Расходы</a></li>
                         <li><a class="dropdown-item" href="{% url 'operations' %}?type_of=earn">Доходы</a></li>
                         <li><a class="dropdown-item" href="{% url 'operations' %}?type_of=transfer">Переводы</a></li>
                         
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{% url 'operations' %}">Все операции</a></li>
-                        
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{% url 'operation_new' %}">Добавить операцию</a></li>
                     </ul>
                 </li>
                 
@@ -40,11 +44,11 @@
                         Счета
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li><a class="dropdown-item" href="{% url 'wallets' %}">Все счета</a></li>
+                        <li><hr class="dropdown-divider"></li>
                         {% for wallet in wallets %}
                             <li><a class="dropdown-item" href="{{ wallet.get_absolute_url }}">{{ wallet }}</a></li>
                         {% endfor %}
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{% url 'wallets' %}">Все счета</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{% url 'wallet_new' %}">Добавить новый счёт</a></li>
                     </ul>
@@ -55,19 +59,19 @@
                         Категории
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li><a class="dropdown-item" href="{% url 'categories' %}">Все категории</a></li>
+                        <li><hr class="dropdown-divider"></li>
     
                         <li><a class="dropdown-item" href="{% url 'categories' %}?type=pay">Расходные</a></li>
                         <li><a class="dropdown-item" href="{% url 'categories' %}?type=earn">Доходные</a></li>
     
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{% url 'categories' %}">Все категории</a></li>
-                        <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{% url 'category_new' %}">Добавить новую категорию</a></li>
                     </ul>
                 </li>
                 
-                <li class="nav-item"><a class="nav-link active" aria-current="page" href="#">Анализ</a></li>
-                <li class="nav-item"><a class="nav-link active" aria-current="page" href="#">Бюджет</a></li>
+                <li class="nav-item"><a class="nav-link disabled" aria-current="page" href="#">Анализ</a></li>
+                <li class="nav-item"><a class="nav-link disabled" aria-current="page" href="#">Бюджет</a></li>
                 <li class="nav-item"><a class="nav-link active" aria-current="page" href="{% url 'settings' %}">Настройки</a></li>
             </ul>
             <span class="navbar-text">

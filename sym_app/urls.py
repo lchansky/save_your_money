@@ -8,6 +8,7 @@ urlpatterns = [
     path('operations/<int:pk>', OperationDetail.as_view(), name='operation_detail'),
     path('operations/edit/<int:pk>', operation_edit, name='operation_edit'),
     path('operations/delete/<int:pk>', operation_delete, name='operation_delete'),
+    path('operations/duplicate/<int:pk>', operation_duplicate, name='operation_duplicate'),
     
     path('wallets/', Wallets.as_view(), name='wallets'),
     path('wallets/new/', wallet_new, name='wallet_new'),

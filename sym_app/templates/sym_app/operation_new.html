@@ -193,6 +193,10 @@
     function change_currency1(key) {
         document.getElementById("id_currency1").value = wallets_currency_dict[key];
         document.getElementById("id_currency1").disabled = true;
+        if (document.getElementById("id_category").value !== String({{ transfer_category }}) ) {
+            change_currency2(key);
+            document.getElementById("id_currency2").disabled = false;
+        }
     }
     
     function change_currency2(key) {

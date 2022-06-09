@@ -9,7 +9,7 @@
 <h1>{{ title }}</h1>
 </p>
 
-<form action="{% url 'operation_edit' operation.pk %}" method="post" class="text-start" style="max-width:600px;">
+<form action="{% url 'operation_duplicate' operation.pk %}" method="post" class="text-start" style="max-width:600px;">
     
     {% csrf_token %}
     <p>
@@ -105,7 +105,7 @@
     </p>
     
     <p>
-        <button type="submit" class="btn btn-primary btn-block" onclick="enable_all_fields()">Сохранить изменения</button>
+        <button type="submit" class="btn btn-primary btn-block" onclick="enable_all_fields()">Добавить операцию</button>
     </p>
 </form>
 

@@ -221,3 +221,49 @@ class CategoryEditForm(forms.ModelForm):
         }
         help_texts = {'type_of': ''}
         labels = {'type_of': ''}
+
+
+class OperationFilterForm(forms.Form):
+        
+    date_from = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        label='От',
+        required=False,
+    )
+    date_to = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        label='До',
+        required=False,
+    )
+    type_of = forms.ChoiceField(
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        choices=(('', ''), ('pay', 'Расходы'), ('earn', 'Доходы'), ('transfer', 'Переводы')),
+        required=False,
+        label='Тип',
+    )
+    category = forms.ModelChoiceField(
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        required=False,
+        queryset=None,
+        label='Категория',
+    )
+
+    wallet = forms.ModelChoiceField(
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        required=False,
+        queryset=None,
+        label='Счёт',
+    )
+
+    description = forms.CharField(
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+        required=False,
+        label='Описание',
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop('request')
+        super(OperationFilterForm, self).__init__(*args, **kwargs)
+        self.fields['category'].queryset = Category.objects.filter(user=self.request.user)
+        self.fields['wallet'].queryset = Wallet.objects.filter(user=self.request.user)
+    

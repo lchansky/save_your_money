@@ -6,21 +6,116 @@
 
 {% block content %}
 
-<p>
-Список операций:
-</p>
 
-{% if not operations %}
-<p>
-Здесь ничего нет. Добавьте первую операцию! (Операции >> Добавить операцию)
-</p>
-{% endif %}
 
-{% for item in operations %}
-<p>
-    Операция № {{ item.pk }} - Пользователь: {{ item.user }} - Счёт списания: {{ item.from_wallet_id }}
-</p>
-{% eld %}
+<h1>{{ title }}</h1>
+<form action="{% url 'operations' %}" method="post" style="max-width: 700px;">
+    {% csrf_token %}
+    <div class="row">
+        <p class="col">
+            <b>{{ form.date_from.label }}</b>
+            {{ form.date_from }}
+            {{ form.date_from.errors }}
+            {{ form.date_from.help_text }}
+        </p>
+        <p class="col">
+            <b>{{ form.date_to.label }}</b>
+            {{ form.date_to }}
+            {{ form.date_to.errors }}
+            {{ form.date_to.help_text }}
+        </p>
+    </div>
+    <div class="row">
+        <p class="col">
+            <b>{{ form.type_of.label }}</b>
+            {{ form.type_of }}
+            {{ form.type_of.errors }}
+            {{ form.type_of.help_text }}
+        </p>
+        <p class="col">
+            <b>{{ form.category.label }}</b>
+            {{ form.category }}
+            {{ form.category.errors }}
+            {{ form.category.help_text }}
+        </p>
+    </div>
+    <div class="row">
+        <p class="col">
+            <b>{{ form.wallet.label }}</b>
+            {{ form.wallet }}
+            {{ form.wallet.errors }}
+            {{ form.wallet.help_text }}
+        </p>
+        <p class="col">
+            <b>{{ form.description.label }}</b>
+            {{ form.description }}
+            {{ form.description.errors }}
+            {{ form.description.help_text }}
+        </p>
+    </div>
+    <p>
+        <button type="submit" class="btn btn-primary btn-block">Поиск</button>
+    </p>
+</form>
+
+
+{% for day, list_operations in operations_in_days.items %}
+    <div class="card text-dark bg-light mb-5" style="max-width: 700px;">
+        <div class="card-header fw-bold text-start">{{ day }}</div>
+            {% for operation in list_operations %}
+                <a href="{{ operation.get_absolute_url }}" class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <div class="fs-4 fw-bold">{{ operation.category }}</div>
+                        <div class="fs-4">
+                        {% if operation.category.type_of == 'pay' %}
+                            {% if operation.amount1 > 0 %}
+                                <div style="color:#ba1111;">-{{ operation.amount1|floatformat:"-2" }} {{ operation.currency1 }}
+                            {% else %}
+                                <div style="color:green;">Возврат +{{ operation.amount1|floatformat:"-2"|slice:"1:" }} {{ operation.currency1 }}
+                            {% endif %}
+                            {% if operation.currency1 != operation.currency2 %}
+                                ({% if operation.amount2 > 0 %}-{{ operation.amount2|floatformat:"-2" }}{% else %}{{ operation.amount2|floatformat:"-2"|slice:"1:" }}{% endif %} {{ operation.currency2 }})</div>
+                            {% else %}
+                            </div>
+                            {% endif %}
+
+                        {% endif %}
+
+                        {% if operation.category.type_of == 'earn' %}
+                            {% if operation.amount1 > 0 %}
+                                <div style="color:green;">+{{ operation.amount1|floatformat:"-2" }} {{ operation.currency1 }}
+                            {% else %}
+                                <div style="color:#ba1111;">Возврат {{ operation.amount1|floatformat:"-2" }} {{ operation.currency1 }}
+                            {% endif %}
+                            {% if operation.currency1 != operation.currency2 %}
+                                ({% if operation.amount2 > 0 %}+{% endif %}{{ operation.amount2|floatformat:"-2" }} {{ operation.currency2 }})</div>
+                            {% else %}
+                                </div>
+                            {% endif %}
+                        {% endif %}
+
+                        {% if operation.category.type_of == 'transfer' %}
+                            -{{ operation.amount1|floatformat:"-2" }} {{ operation.currency1 }}
+                            ➔ +{{ operation.amount2|floatformat:"-2" }} {{ operation.currency2 }}
+                        {% endif %}
+                            
+                            
+                        </div>
+                    </div>
+                    <div class="d-flex w-100 justify-content-between">
+                        <p class="fs-5">
+                        💳 {{ operation.from_wallet.name }}{% if operation.to_wallet %}➔ {{ operation.to_wallet.name }}{% endif %}
+                        </p>
+                        <p class="fs-5">{{ operation.updated_at|time }}</p>
+                    </div>
+                    <div class="text-start">{{ operation.description|truncatechars:70 }}</div>
+                </a>
+            {% endfor %}
+    </div>
+{% empty %}
+<h5>
+Здесь ничего нет. Добавьте первую операцию!<br>(Операции >> Добавить операцию)
+</h5>
 {% endfor %}
 
 {% endblock %}

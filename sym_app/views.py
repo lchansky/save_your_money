@@ -1,6 +1,11 @@
 import datetime as dt
+import urllib
 from pprint import pprint
+from urllib.parse import urlencode
+import xml.etree.ElementTree as ET
+
 import pytz
+import requests
 from pytz import UTC
 from google_currency import convert, CODES
 import json
@@ -9,13 +14,13 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
-from django.views.generic import ListView, UpdateView, DetailView
+from django.views.generic import ListView, UpdateView, DetailView, FormView
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q, F
 
-from sym_django.settings import TIME_ZONE
+from sym_django.settings import TIME_ZONE, BASE_DIR
 from .decorators import check_permissions
 from .models import *
 from .forms import *
@@ -64,25 +69,38 @@ def user_login(request):
     return render(request, 'sym_app/login.html', {'form': form})
 
 
-class HomeOperations(LoginRequiredMixin, ListView):
+class HomeOperations(LoginRequiredMixin, FormView, ListView):
     redirect_field_name = None  # Для миксина LoginRequiredMixin
     login_url = 'about'  # Для миксина LoginRequiredMixin
     
-    model = Operation
-    template_name = 'sym_app/home_operations.html'
+    def get(self, request, *args, **kwargs):
+        return render(request, 'sym_app/operations.html', context=self.get_context())
     
-    context_object_name = 'operations'
+    def post(self, request, *args, **kwargs):
+        filter_dict = dict(self.get_form_kwargs()['data'])
+        filter_dict.pop('csrfmiddlewaretoken')
+        filter_dict_copy = filter_dict.copy()
+        for k, v in filter_dict_copy.items():
+            if v == ['', ]:
+                filter_dict.pop(k)
+            else:
+                filter_dict[k] = v[0]
+        base_url = reverse('operations')
+        query_string = urlencode(filter_dict)
+        url = f'{base_url}?{query_string}'  # 3 /operations/?category=42
+        return redirect(url)
     
-    def get_context_data(self, *, object_list=None, **kwargs):
-        context = super().get_context_data(**kwargs)
+    def get_context(self):
+        context = {}
         context['title'] = 'Список операций'
         context['operations_in_days'] = self.get_operations_in_days()
+        context['form'] = OperationFilterForm(request=self.request, initial=self.request.GET)
         context.update(universal_context(self.request))
         return context
     
     def get_operations_in_days(self):
         """Возвращает словарь, где ключи - даты, а значения - списки из операций в эту дату {date: [operations]}"""
-        operations = self.get_queryset()
+        operations = Operation.objects.filter(self.url_filtering())
         operations_in_days = {}  # {date1: [operation1, operation2, ...], date2: [operation3, operation4, ...], }
         
         days = set()  # Создаём множество из уникальных дат
@@ -99,7 +117,7 @@ class HomeOperations(LoginRequiredMixin, ListView):
         
         return operations_in_days
     
-    def sorting(self):
+    def url_filtering(self):
         """Собирает параметры запроса к БД, где user это текущий пользователь,
         а все остальные параметры берутся из URL адреса"""
         kwargs = {}
@@ -146,9 +164,6 @@ class HomeOperations(LoginRequiredMixin, ListView):
             q = q & (Q(from_wallet__pk=kwargs['from_wallet__pk']) | Q(to_wallet__pk=kwargs['to_wallet__pk']))
         
         return q
-    
-    def get_queryset(self):
-        return Operation.objects.filter(self.sorting())
     
 
 class OperationDetail(LoginRequiredMixin, DetailView):
@@ -240,17 +255,13 @@ def operation_duplicate(request, pk):
             'amount2': operation.amount2,
             'description': operation.description,
         })
-    
-    wallets_currency_dict = {wallet.pk: wallet.currency.pk
-                             for wallet in Wallet.objects.filter(user=request.user)}
-    with open('exchange_rates_pks.json', 'r') as file:
-        exchange_rates_pks = file.read()
+        
     context = {'form': form,
                'title': 'Добавление операции',
                'operation': operation,
                'transfer_category': Category.objects.get(user=request.user, type_of='transfer').pk,
-               'wallets_currency_dict': wallets_currency_dict,
-               'exchange_rates_pks': exchange_rates_pks,
+               'wallets_currency_dict': load_wallets_currencies(request),
+               'exchange_rates_pks': load_exchange_rates_pks(),
                }
     context.update(universal_context(request))
     
@@ -261,7 +272,6 @@ def operation_duplicate(request, pk):
 @check_permissions(model=Operation, redirect_page='operations')
 def operation_edit(request, pk):
     operation = Operation.objects.get(pk=pk)
-    
     if request.method == 'POST':
         form = OperationEditForm(data=request.POST, request=request)
         if form.is_valid():
@@ -322,16 +332,12 @@ def operation_edit(request, pk):
             'description': operation.description,
         })
 
-    wallets_currency_dict = {wallet.pk: wallet.currency.pk
-                             for wallet in Wallet.objects.filter(user=request.user)}
-    with open('exchange_rates_pks.json', 'r') as file:
-        exchange_rates_pks = file.read()
     context = {'form': form,
                'title': 'Редактирование операции',
                'operation': operation,
                'transfer_category': Category.objects.get(user=request.user, type_of='transfer').pk,
-               'wallets_currency_dict': wallets_currency_dict,
-               'exchange_rates_pks': exchange_rates_pks,
+               'wallets_currency_dict': load_wallets_currencies(request),
+               'exchange_rates_pks': load_exchange_rates_pks(),
                }
     context.update(universal_context(request))
 
@@ -371,16 +377,11 @@ def operation_new(request):
         form = OperationNewForm(request=request,
                                 initial={'from_wallet': Wallet.objects.filter(user=request.user).first()})
 
-    wallets_currency_dict = {wallet.pk: wallet.currency.pk
-                             for wallet in Wallet.objects.filter(user=request.user)}
-    with open('exchange_rates_pks.json', 'r') as file:
-        exchange_rates_pks = file.read()
-    
     context = {'form': form,
                'title': 'Добавление операции',
                'transfer_category': Category.objects.get(user=request.user, type_of='transfer').pk,
-               'wallets_currency_dict': wallets_currency_dict,
-               'exchange_rates_pks': exchange_rates_pks,
+               'wallets_currency_dict': load_wallets_currencies(request),
+               'exchange_rates_pks': load_exchange_rates_pks(),
                }
     context.update(universal_context(request))
     
@@ -390,11 +391,20 @@ def operation_new(request):
 def universal_context(request):
     """Принимает запрос и контекст, добавляет к контексту те переменные, которые используются на каждой странице.
     Например, на navbar используется"""
-    extra_context = {
+    wallets = Wallet.objects.filter(user=request.user)
+    currencies_and_balance = list(wallets.values('balance', 'currency'))
+    main_currency = Profile.objects.get(user=request.user).main_currency
+    overall_balance = 0
+    for item in currencies_and_balance:
+        overall_balance += exchanger(item['currency'], main_currency.pk, item['balance'])
+    
+    context = {
         'optional_name': Profile.objects.get(user=request.user).name,
-        'wallets': Wallet.objects.filter(user=request.user),
+        'wallets': wallets,
+        'overall_balance': round(overall_balance),
+        'main_currency': main_currency
     }
-    return extra_context
+    return context
 
 
 class Wallets(LoginRequiredMixin, ListView):
@@ -715,6 +725,17 @@ class Settings(LoginRequiredMixin, UpdateView):
 
 def update_currencies(request):
     currencies = Currency.objects.all()
+    
+    # Блок парсинга курса Рубля ПМР
+    rup = Currency.objects.get(name='RUP')
+    response = requests.get("https://www.agroprombank.com/xmlinformer.php")
+    root = ET.fromstring(response.text)
+    rup_rate = float(root[1][2].findtext('currencySell'))
+    rup.exchange_rate = rup_rate
+    rup.exchange_rate_reverse = 1 / rup_rate
+    rup.save()
+    
+    # Блок парсинга всех остальных валют
     for currency in currencies:  # берём по одной валюте из БД
         if currency.name in CODES.keys() and currency.exchange_to in CODES.keys():
             converted = json.loads(convert(currency.name, currency.exchange_to, 1000))
@@ -722,6 +743,8 @@ def update_currencies(request):
             currency.exchange_rate = float(converted['amount']) / 1000
             currency.exchange_rate_reverse = 1000 / float(converted['amount'])
             currency.save()
+    
+    # Блок записи в JSON
     exchange = {}
     exchange_pks = {}
     for c_outer in currencies:
@@ -751,3 +774,27 @@ def update_currencies(request):
     print('====== Обновление курсов валют прошло успешно, БД и JSON обновлены ======')
     
     return render(request, 'sym_app/about.html')
+
+
+def load_exchange_rates_pks():
+    with open('exchange_rates_pks.json', 'r') as file:
+        exchange_rates_pks = file.read()
+    return exchange_rates_pks
+
+
+def load_wallets_currencies(request):
+    wallets_currency_dict = {wallet.pk: wallet.currency.pk
+                             for wallet in Wallet.objects.filter(user=request.user)}
+    return wallets_currency_dict
+    
+
+def exchanger(curr1_pk, curr2_pk, amount):
+    if curr1_pk == curr2_pk:
+        return amount
+    rates = json.loads(load_exchange_rates_pks())
+    curr1_pk = str(curr1_pk)
+    curr2_pk = str(curr2_pk)
+    result = amount / rates[curr1_pk][curr2_pk]
+    return result
+    
+    

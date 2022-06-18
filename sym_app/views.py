@@ -42,7 +42,7 @@ def register(request):
     if request.user.is_authenticated:
         return redirect('home')
     if request.method == 'POST':
-        form = UserRegisterForm(request.POST)
+        form = UserRegisterForm(data=request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
@@ -87,7 +87,7 @@ class HomeOperations(LoginRequiredMixin, FormView, ListView):
                 filter_dict[k] = v[0]
         base_url = reverse('operations')
         query_string = urlencode(filter_dict)
-        url = f'{base_url}?{query_string}'  # 3 /operations/?category=42
+        url = f'{base_url}?{query_string}'  # /operations/?category=42
         return redirect(url)
     
     def get_context(self):
@@ -100,7 +100,9 @@ class HomeOperations(LoginRequiredMixin, FormView, ListView):
     
     def get_operations_in_days(self):
         """Возвращает словарь, где ключи - даты, а значения - списки из операций в эту дату {date: [operations]}"""
-        operations = Operation.objects.filter(self.url_filtering())
+        operations = (Operation.objects
+                      .filter(self.url_filtering())
+                      .select_related('category', 'from_wallet', 'to_wallet', 'currency1', 'currency2'))
         operations_in_days = {}  # {date1: [operation1, operation2, ...], date2: [operation3, operation4, ...], }
         
         days = set()  # Создаём множество из уникальных дат
@@ -184,7 +186,7 @@ class OperationDetail(LoginRequiredMixin, DetailView):
 @login_required(login_url='about')
 @check_permissions(model=Operation, redirect_page='operations')
 def operation_delete(request, pk):
-    operation = Operation.objects.get(pk=pk)
+    operation = Operation.objects.select_related('from_wallet', 'to_wallet', 'category', 'currency1', 'currency2').get(pk=pk)
 
     # Сбор параметров операции для изменения балансов (ниже)
     from_wallet_old = operation.from_wallet
@@ -212,7 +214,8 @@ def operation_delete(request, pk):
 @login_required(login_url='about')
 @check_permissions(model=Operation, redirect_page='operations')
 def operation_duplicate(request, pk):
-    operation = Operation.objects.get(pk=pk)
+    operation = Operation.objects.select_related('from_wallet', 'to_wallet', 'category').get(pk=pk)
+    operation_fields = Operation.objects.values().get(pk=pk)
     
     if request.method == 'POST':
         form = OperationNewForm(data=request.POST, request=request)
@@ -242,18 +245,18 @@ def operation_duplicate(request, pk):
             return redirect(created_operation.get_absolute_url())
     else:
         # Добавляю дельту таймзоны, т.к. в БД время в UTC.
-        dt_with_tz = operation.updated_at.astimezone(tz=pytz.timezone(TIME_ZONE))
+        dt_with_tz = operation_fields['updated_at'].astimezone(tz=pytz.timezone(TIME_ZONE))
         
         form = OperationNewForm(request=request, initial={
             'updated_at': dt_with_tz.strftime('%Y-%m-%dT%H:%M'),  # HTML понимает только формат 'yyyy-mm-ddThh:mm'
-            'from_wallet': operation.from_wallet,
-            'category': operation.category,
-            'to_wallet': operation.to_wallet,
-            'currency1': operation.currency1,
-            'amount1': operation.amount1,
-            'currency2': operation.currency2,
-            'amount2': operation.amount2,
-            'description': operation.description,
+            'from_wallet': operation_fields['from_wallet_id'],
+            'category': operation_fields['category_id'],
+            'to_wallet': operation_fields['to_wallet_id'],
+            'currency1': operation_fields['currency1_id'],
+            'amount1': operation_fields['amount1'],
+            'currency2': operation_fields['currency2_id'],
+            'amount2': operation_fields['amount2'],
+            'description': operation_fields['description'],
         })
         
     context = {'form': form,
@@ -271,7 +274,8 @@ def operation_duplicate(request, pk):
 @login_required(login_url='about')
 @check_permissions(model=Operation, redirect_page='operations')
 def operation_edit(request, pk):
-    operation = Operation.objects.get(pk=pk)
+    operation = Operation.objects.select_related('from_wallet', 'to_wallet', 'category').get(pk=pk)
+    operation_fields = Operation.objects.values().get(pk=pk)
     if request.method == 'POST':
         form = OperationEditForm(data=request.POST, request=request)
         if form.is_valid():
@@ -318,18 +322,18 @@ def operation_edit(request, pk):
             return redirect(operation.get_absolute_url())
     else:
         # Добавляю дельту таймзоны, т.к. в БД время в UTC.
-        dt_with_tz = operation.updated_at.astimezone(tz=pytz.timezone(TIME_ZONE))
+        dt_with_tz = operation_fields['updated_at'].astimezone(tz=pytz.timezone(TIME_ZONE))
         
         form = OperationEditForm(request=request, initial={
             'updated_at': dt_with_tz.strftime('%Y-%m-%dT%H:%M'),  # HTML понимает только формат 'yyyy-mm-ddThh:mm'
-            'from_wallet': operation.from_wallet,
-            'category': operation.category,
-            'to_wallet': operation.to_wallet,
-            'currency1': operation.currency1,
-            'amount1': operation.amount1,
-            'currency2': operation.currency2,
-            'amount2': operation.amount2,
-            'description': operation.description,
+            'from_wallet': operation_fields['from_wallet_id'],
+            'category': operation_fields['category_id'],
+            'to_wallet': operation_fields['to_wallet_id'],
+            'currency1': operation_fields['currency1_id'],
+            'amount1': operation_fields['amount1'],
+            'currency2': operation_fields['currency2_id'],
+            'amount2': operation_fields['amount2'],
+            'description': operation_fields['description'],
         })
 
     context = {'form': form,
@@ -389,20 +393,21 @@ def operation_new(request):
 
 
 def universal_context(request):
-    """Принимает запрос и контекст, добавляет к контексту те переменные, которые используются на каждой странице.
+    """Принимает запрос и контекст, добавляет к контексту те переменные,
+    которые используются на каждой странице.
     Например, на navbar используется"""
-    wallets = Wallet.objects.filter(user=request.user)
-    currencies_and_balance = list(wallets.values('balance', 'currency'))
+    wallets = Wallet.objects.filter(user=request.user).select_related('currency')
+    optional_name = Profile.objects.get(user=request.user).name
     main_currency = Profile.objects.get(user=request.user).main_currency
     overall_balance = 0
-    for item in currencies_and_balance:
+    for item in list(wallets.values('balance', 'currency')):
         overall_balance += exchanger(item['currency'], main_currency.pk, item['balance'])
     
     context = {
-        'optional_name': Profile.objects.get(user=request.user).name,
+        'optional_name': optional_name,
         'wallets': wallets,
+        'main_currency': main_currency,
         'overall_balance': round(overall_balance),
-        'main_currency': main_currency
     }
     return context
 
@@ -784,7 +789,7 @@ def load_exchange_rates_pks():
 
 def load_wallets_currencies(request):
     wallets_currency_dict = {wallet.pk: wallet.currency.pk
-                             for wallet in Wallet.objects.filter(user=request.user)}
+                             for wallet in Wallet.objects.filter(user=request.user).select_related('currency')}
     return wallets_currency_dict
     
 

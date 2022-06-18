@@ -45,10 +45,10 @@ class Wallet(models.Model):
     def inc_balance(self, amount: float):
         """Принимает float. Увеличивает баланс кошелька. Записывает изменения в БД."""
         amount = float(amount)
-        old_balance = self.balance
+        # old_balance = self.balance
         Wallet.objects.filter(pk=self.pk).update(balance=F('balance')+amount)
-        print(f'Кошелёк id={self.pk} пользователя {self.user}: '
-              f'Баланс изменен на {amount} {self.currency}. Текущий баланс {old_balance+amount} {self.currency}')
+        # print(f'Кошелёк id={self.pk} пользователя {self.user}: '
+        #       f'Баланс изменен на {amount} {self.currency}. Текущий баланс {old_balance+amount} {self.currency}')
         return amount
     
     def dec_balance(self, amount: float):
@@ -174,7 +174,7 @@ class DefaultWallets(models.Model):
 
 # Декоратор ресивер отлавливает изменения в модели User, встроенной в Джанго
 @receiver(post_save, sender=User)
-def create_or_update_user_profile(sender, instance, created, **kwargs):
+def create_or_update_user_profile(instance, created, **kwargs):  # kwargs нужен для декоратора
     """Если пользователь зарегистрировался - функция запускает создание для него
     дефолтных параметров, категорий, счетов. Если произошли изменения в модели User
     - то подтягивает изменения во все связанные кастомные модели"""

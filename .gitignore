@@ -134,3 +134,4 @@ venv/
 .idea/
 
 trash.py
+django_settings.json

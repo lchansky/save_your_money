@@ -5,8 +5,6 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
 
-from sym_app.utils import default_user_settings
-
 """
     ЗДЕСЬ В АТРИБУТАХ МОДЕЛЕЙ, ГДЕ ЕСТЬ ForeignKey МОЖНО ПОПРОБОВАТЬ ЮЗАТЬ
     related_name='name' ЧТОБЫ В ТАБЛИЦЕ-ПРЕДКЕ ПОЯВИЛОСЬ ПОЛЕ, В КОТОРОМ
@@ -179,5 +177,6 @@ def create_or_update_user_profile(instance, created, **kwargs):  # kwargs нуж
     дефолтных параметров, категорий, счетов. Если произошли изменения в модели User
     - то подтягивает изменения во все связанные кастомные модели"""
     if created:
+        from sym_app.utils.utils import default_user_settings
         default_user_settings(instance)
     instance.profile.save()

@@ -1,29 +1,24 @@
 import datetime as dt
-import urllib
-from pprint import pprint
 from urllib.parse import urlencode
 import xml.etree.ElementTree as ET
 
 import pytz
 import requests
-from pytz import UTC
 from google_currency import convert, CODES
 import json
 
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ValidationError
 from django.shortcuts import render, redirect
-from django.contrib.auth.models import User
 from django.views.generic import ListView, UpdateView, DetailView, FormView
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Q, F
+from django.db.models import Q
 
-from sym_django.settings import TIME_ZONE, BASE_DIR
+from sym_django.settings import TIME_ZONE
 from .decorators import check_permissions
-from .models import *
 from .forms import *
+from sym_app.utils.utils import universal_context, load_exchange_rates_pks, load_wallets_currencies
 
 
 def about(request):
@@ -85,8 +80,8 @@ class HomeOperations(LoginRequiredMixin, FormView, ListView):
                 filter_dict.pop(k)
             else:
                 filter_dict[k] = v[0]
-        base_url = reverse('operations')
         query_string = urlencode(filter_dict)
+        base_url = reverse('operations')
         url = f'{base_url}?{query_string}'  # /operations/?category=42
         return redirect(url)
     
@@ -390,26 +385,6 @@ def operation_new(request):
     context.update(universal_context(request))
     
     return render(request, 'sym_app/operation_new.html', context)
-
-
-def universal_context(request):
-    """Принимает запрос и контекст, добавляет к контексту те переменные,
-    которые используются на каждой странице.
-    Например, на navbar используется"""
-    wallets = Wallet.objects.filter(user=request.user).select_related('currency')
-    optional_name = Profile.objects.get(user=request.user).name
-    main_currency = Profile.objects.get(user=request.user).main_currency
-    overall_balance = 0
-    for item in list(wallets.values('balance', 'currency')):
-        overall_balance += exchanger(item['currency'], main_currency.pk, item['balance'])
-    
-    context = {
-        'optional_name': optional_name,
-        'wallets': wallets,
-        'main_currency': main_currency,
-        'overall_balance': round(overall_balance),
-    }
-    return context
 
 
 class Wallets(LoginRequiredMixin, ListView):
@@ -781,25 +756,4 @@ def update_currencies(request):
     return render(request, 'sym_app/about.html')
 
 
-def load_exchange_rates_pks():
-    with open('exchange_rates_pks.json', 'r') as file:
-        exchange_rates_pks = file.read()
-    return exchange_rates_pks
-
-
-def load_wallets_currencies(request):
-    wallets_currency_dict = {wallet.pk: wallet.currency.pk
-                             for wallet in Wallet.objects.filter(user=request.user).select_related('currency')}
-    return wallets_currency_dict
-    
-
-def exchanger(curr1_pk, curr2_pk, amount):
-    if curr1_pk == curr2_pk:
-        return amount
-    rates = json.loads(load_exchange_rates_pks())
-    curr1_pk = str(curr1_pk)
-    curr2_pk = str(curr2_pk)
-    result = amount / rates[curr1_pk][curr2_pk]
-    return result
-    
     

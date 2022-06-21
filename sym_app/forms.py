@@ -1,6 +1,7 @@
 import re
 from pprint import pprint
 
+import pytz
 from django.contrib.auth import get_user, get_user_model
 from django.contrib.auth.middleware import AuthenticationMiddleware
 from django.core.exceptions import ValidationError
@@ -9,6 +10,7 @@ from django.contrib.auth.models import User
 from django import forms
 from django.http import HttpRequest
 
+from sym_django.settings import TIME_ZONE
 from .models import *
 
 
@@ -91,6 +93,18 @@ class OperationNewForm(forms.ModelForm):
             'category':  'Для перевода между счетами выберите категорию "Переводы"'
         }
 
+    def custom_cleaned_data(self, request):
+        data = self.cleaned_data
+        data['user_id'] = request.user.id
+        data['amount1'] = self.clean_amount1()
+        data['amount2'] = self.clean_amount2()
+        data['exchange_rate'] = self.clean_exchange_rate()
+        data['to_wallet'] = self.clean_to_wallet()
+        data['currency1'] = self.clean_currency1()
+        data['currency2'] = self.clean_currency2()
+        return data
+
+
     # Кастомная валидация, срабатывает автоматически для поля currency1
     def clean_currency1(self):
         data = self.cleaned_data
@@ -149,7 +163,24 @@ class OperationNewForm(forms.ModelForm):
             data['to_wallet'] = None
         return data['to_wallet']
     
-
+    @staticmethod
+    def initial_fields(fields: dict):
+        # Добавляю дельту таймзоны, т.к. в БД время в UTC.
+        dt_with_tz = fields['updated_at'].astimezone(tz=pytz.timezone(TIME_ZONE))
+        
+        # HTML понимает только формат 'yyyy-mm-ddThh:mm'
+        initial = {'updated_at': dt_with_tz.strftime('%Y-%m-%dT%H:%M'),
+                   'from_wallet': fields['from_wallet_id'],
+                   'category': fields['category_id'],
+                   'to_wallet': fields['to_wallet_id'],
+                   'currency1': fields['currency1_id'],
+                   'amount1': fields['amount1'],
+                   'currency2': fields['currency2_id'],
+                   'amount2': fields['amount2'],
+                   'description': fields['description'],
+                   }
+        return initial
+    
 
 class OperationEditForm(OperationNewForm):
     pass

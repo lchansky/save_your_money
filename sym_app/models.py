@@ -52,6 +52,25 @@ class Wallet(models.Model):
     def dec_balance(self, amount: float):
         """Принимает float. Уменьшает баланс кошелька. Записывает изменения в БД."""
         return self.inc_balance(-amount)
+    
+    @staticmethod
+    def smart_change_balance(type_of, from_wallet: 'Wallet object', amount1, to_wallet=None, amount2=None):
+        """Умное изменение баланса кошелька - учитывает категорию операции и сам
+        определяет, увеличить или уменьшить баланс того или иного кошелька."""
+        if type_of == 'pay':
+            from_wallet.dec_balance(amount1)
+        elif type_of == 'earn':
+            from_wallet.inc_balance(amount1)
+        elif type_of == 'transfer' and to_wallet and amount2:
+            from_wallet.dec_balance(amount1)
+            to_wallet.inc_balance(amount2)
+        else:
+            raise TypeError
+
+    @staticmethod
+    def smart_rollback_balance(type_of, from_wallet: 'Wallet object', amount1, to_wallet=None, amount2=None):
+        """Умный откат баланса кошелька (использует smart_change_balance() только с минусовыми значениями)"""
+        Wallet.smart_change_balance(type_of, from_wallet, -amount1, to_wallet, -amount2)
 
     class Meta:
         verbose_name = 'Счёт'
@@ -129,6 +148,42 @@ class Operation(models.Model):
     
     def get_absolute_url(self):
         return reverse('operation_detail', kwargs={'pk': self.pk})
+    
+    @staticmethod
+    def create_from_view(data):
+        """Создание операции. Принимает словарь полей для новой операции.
+        Изменяет баланс кошелька/кошельков"""
+        # Создание записи в БД
+        operation = Operation.objects.create(**data)
+        # Изменение балансов кошельков
+        Wallet.smart_change_balance(data['category'].type_of,
+                                    data['from_wallet'], data['amount1'],
+                                    data['to_wallet'], data['amount2'])
+        return operation
+    
+    def delete_from_view(self):
+        """Удаление операции.
+           Откатывает баланс кошелька/кошельков"""
+        args = self.args_to_change_balances()
+        self.delete()
+        Wallet.smart_rollback_balance(*args)  # Откат балансов
+    
+    def edit_from_view(self, data):
+        """Изменение операции. Принимает словарь полей для изменения операции.
+           Изменяет баланс кошелька/кошельков"""
+        args = self.args_to_change_balances()
+        # Сохранение в БД изменённой операции
+        Operation.objects.filter(pk=self.pk).update(**data)
+        Wallet.smart_rollback_balance(*args)
+        Wallet.smart_change_balance(data['category'].type_of,
+                                    data['from_wallet'], data['amount1'],
+                                    data['to_wallet'], data['amount2'])
+        
+    def args_to_change_balances(self):
+        """Сбор параметров операции для изменения/отката балансов"""
+        return (self.category.type_of,
+                self.from_wallet, self.amount1,
+                self.to_wallet, self.amount2)
 
     class Meta:
         verbose_name = 'Операция'

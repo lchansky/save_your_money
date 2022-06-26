@@ -9,6 +9,8 @@ def default_user_settings(instance):
 
     if Currency.objects.all().count() == 0:
         Currency.objects.create(name='RUB', exchange_to='RUB', exchange_rate=1, exchange_rate_reverse=1)
+        Currency.objects.create(name='USD', exchange_to='RUB', exchange_rate=55, exchange_rate_reverse=1/55)
+        Currency.objects.create(name='EUR', exchange_to='RUB', exchange_rate=58, exchange_rate_reverse=1/58)
     
     Profile.objects.create(user=instance)
     

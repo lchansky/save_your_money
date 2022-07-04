@@ -1,0 +1,12 @@
+version: "3.8"
+
+services: 
+  sym:
+    restart: always
+    build:
+      context: .
+    ports:
+      - "80:8000"
+    command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
+    volumes:
+      - "./src/db:/app/src/db"

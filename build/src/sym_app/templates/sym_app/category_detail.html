@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }} - {{ block.super }}
+{% endblock %}
+
+{% block content %}
+
+
+<h1>{{ title }}</h1>
+<br>
+
+{% if category.user == request.user %}
+<div class="list-group-item list-group-item text-start fs-5" style="max-width:600px;">
+    
+    <table class="table">
+        <tbody>
+        <tr>
+            <td style="width: 50%">Тип:</td>
+            <td style="width: 50%" class="fs-5">
+                {% if category.type_of == 'earn' %}<a href="{% url 'operations' %}?type_of=earn">Доходы</a>{% endif %}
+                {% if category.type_of == 'pay' %}<a href="{% url 'operations' %}?type_of=pay">Расходы</a>{% endif %}
+                {% if category.type_of == 'transfer' %}<a href="{% url 'operations' %}?type_of=transfer">Переводы</a>{% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td style="width: 50%">Название</td>
+            <td style="width: 50%" class="fs-5"><a href="{% url 'operations' %}?category={{ category.pk }}">{{ category.name }}</a></td>
+        </tr>
+        <tr>
+            <td style="width: 50%">Бюджет (в разработке...)</td>
+            <td style="width: 50%" class="fs-5">{{ category.is_budget|yesno:"Да,Нет,Не указано" }}</td>
+        </tr>
+        {% if category.is_budget %}{% endif %}  <!-- Когда реализую функцию бюджет, поместить "размер бюджета" в блок if -->
+        <tr>
+            <td style="width: 50%">Размер бюджета: (в разработке...)</td>
+            <td style="width: 50%" class="fs-5">{{ category.budget_amount }}</td>
+        </tr>
+        <tr>
+            <td style="width: 50%">Архивная (в разработке...)</td>
+            <td style="width: 50%" class="fs-5">{{ category.is_archive|yesno:"Да,Нет,Не указано" }}</td>
+        </tr>
+    </table>
+    
+    <div class="hstack gap-3">
+        <a href="{% url 'category_edit' category.pk %}" class="col btn btn-outline-primary btn-lg">Редактировать</a>
+        <div class="vr"></div>
+        <button class="col btn btn-outline-danger btn-lg" onclick="delete_item()">Удалить</button>
+    </div>
+    
+    <script>
+    function delete_item() {
+        var x
+        x = confirm('Вы уверены, что хотите удалить категорию "{{ category }}"?');
+        if (x) {
+            location="{% url 'category_delete' category.pk %}";
+        }
+    }
+  </script>
+</div>
+{% else %}
+    <div class="alert alert-danger" role="alert" style="width: 400px;">
+        У вас нет прав на просмотр этой страницы!
+    </div>
+{% endif %}
+
+
+{% endblock %}

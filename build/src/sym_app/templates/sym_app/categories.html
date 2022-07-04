@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }} - {{ block.super }}
+{% endblock %}
+
+{% block content %}
+
+<h1>{{ title }}</h1>
+<br>
+<div class="container">
+    <div class="row fs-5">
+        {% if categories_pay %}
+        <div class="col">
+            <div class="card text-dark bg-light border-danger mb-5" style="max-width: 350px;">
+                <div class="card-header">
+                    <div class="fs-4">Расходы</div>
+                </div>
+                
+                {% for category in categories_pay %}
+                <a href="{{ category.get_absolute_url }}" class="list-group-item list-group-item-action">
+                        {{ category.name }}
+                </a>
+                {% endfor %}
+                
+            </div>
+        </div>
+        {% endif %}
+        {% if categories_earn %}
+        <div class="col">
+            <div class="card text-dark bg-light border-success mb-5" style="max-width: 350px;">
+                <div class="card-header">
+                    <div class="fs-4">Доходы</div>
+                </div>
+                
+                {% for category in categories_earn %}
+                <a href="{{ category.get_absolute_url }}" class="list-group-item list-group-item-action">
+                        {{ category.name }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<p>
+
+<div class="container">
+    <div class="row">
+        
+        <div class="col">
+            <a href="{% url 'category_new' %}" class="btn btn-primary btn-lg">Добавить категорию</a>
+        </div>
+        
+        <div class="col">
+            <a href="#" class="btn btn-secondary btn-lg">Архивные категории</a>
+        </div>
+        
+    </div>
+</div>
+</p>
+
+{% endblock %}

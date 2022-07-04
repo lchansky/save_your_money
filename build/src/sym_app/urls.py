@@ -31,5 +31,5 @@ urlpatterns = [
     
     path('about/', about, name='about'),
     
-    path('update_currencies/', update_currencies, name='update_currencies')
+    path('update_currencies/', upd_curr, name='update_currencies')
 ]

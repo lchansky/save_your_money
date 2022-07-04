@@ -1,11 +1,8 @@
 import datetime as dt
 from urllib.parse import urlencode
-import xml.etree.ElementTree as ET
 
 import pytz
 import requests
-from google_currency import convert, CODES
-import json
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
@@ -18,7 +15,8 @@ from django.db.models import Q
 from sym_django.settings import TIME_ZONE
 from .decorators import check_permissions
 from .forms import *
-from .utils.utils import universal_context, load_exchange_rates_pks, load_wallets_currencies
+from .utils.utils import universal_context, load_exchange_rates_pks, \
+    load_wallets_currencies, update_currencies, write_currencies_to_json
 
 
 def about(request):
@@ -585,57 +583,9 @@ class Settings(LoginRequiredMixin, UpdateView):
         return Profile.objects.get(user=self.request.user)
 
 
-def update_currencies(request):
-    currencies = Currency.objects.all()
-
-    # Блок парсинга курса Рубля ПМР
-    rup = Currency.objects.get(name='RUP')
-    response = requests.get("https://www.agroprombank.com/xmlinformer.php")
-    root = ET.fromstring(response.text)
-    rup_rate = float(root[1][2].findtext('currencySell'))
-    rup.exchange_rate = 1 / rup_rate
-    rup.exchange_rate_reverse = rup_rate
-    rup.save()
-
-    # Блок парсинга всех остальных валют
-    for currency in currencies:  # берём по одной валюте из БД
-        if currency.name in CODES.keys() and currency.exchange_to in CODES.keys():
-            converted = json.loads(convert(currency.name, currency.exchange_to, 1000))
-            # 1000 для точности, больше знаков после запятой
-            currency.exchange_rate = float(converted['amount']) / 1000
-            currency.exchange_rate_reverse = 1000 / float(converted['amount'])
-            currency.save()
-
-    # Блок записи в JSON
-    exchange = {}
-    exchange_pks = {}
-    for c_outer in currencies:
-        exchange[c_outer.name] = {}
-        exchange_pks[c_outer.pk] = {}
-        if c_outer.name in CODES.keys():
-            for c_inner in currencies.exclude(pk=c_outer.pk):
-                if c_inner.name in CODES.keys():
-                    converted = json.loads(convert(c_inner.name, c_outer.name, 1000))
-                    exchange[c_outer.name][c_inner.name] = float(converted['amount']) / 1000
-                    exchange_pks[c_outer.pk][c_inner.pk] = float(converted['amount']) / 1000
-                elif c_inner.exchange_to in CODES.keys():
-                    converted = json.loads(convert(c_inner.exchange_to, c_outer.name, 1000))
-                    exchange[c_outer.name][c_inner.name] = float(converted['amount']) / 1000 * c_inner.exchange_rate
-                    exchange_pks[c_outer.pk][c_inner.pk] = float(converted['amount']) / 1000 * c_inner.exchange_rate
-        elif c_outer.exchange_to in CODES.keys():
-            for c_inner in currencies.exclude(pk=c_outer.pk):
-                if c_inner.name in CODES.keys():
-                    converted = json.loads(convert(c_inner.name, c_outer.exchange_to, 1000))
-                    exchange[c_outer.name][c_inner.name] = float(converted['amount']) / 1000 / c_outer.exchange_rate
-                    exchange_pks[c_outer.pk][c_inner.pk] = float(converted['amount']) / 1000 / c_outer.exchange_rate
-    with open('exchange_rates.json', 'w') as file:
-        json.dump(exchange, file)
-    with open('exchange_rates_pks.json', 'w') as file:
-        json.dump(exchange_pks, file)
-
-    print('====== Обновление курсов валют прошло успешно, БД и JSON обновлены ======')
-
+def upd_curr(request):
+    update_currencies()
+    write_currencies_to_json()
     return render(request, 'sym_app/about.html')
-
 
     

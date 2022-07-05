@@ -1,0 +1,98 @@
+
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        
+        <a class="navbar-brand" href="{% url 'home' %}">
+            <div class="btn btn-outline-primary">
+                <div class="font-monospace fs-4">
+                    Save Your Money!
+                </div>
+            </div>
+        </a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+    
+                <li class="nav-item dropdown">
+                    <a class="nav-link active dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Операции
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        
+                        <li><a class="dropdown-item" href="{% url 'operation_new' %}" style="background-color: #0083ff; color:white;">Добавить операцию</a></li>
+                        
+                        <li><hr class="dropdown-divider"></li>
+                        
+                        <li><a class="dropdown-item" href="{% url 'operations' %}">Все операции</a></li>
+                        
+                        <li><hr class="dropdown-divider"></li>
+                        
+                        <li><a class="dropdown-item" href="{% url 'operations' %}?type_of=pay">Расходы</a></li>
+                        <li><a class="dropdown-item" href="{% url 'operations' %}?type_of=earn">Доходы</a></li>
+                        <li><a class="dropdown-item" href="{% url 'operations' %}?type_of=transfer">Переводы</a></li>
+                        
+                    </ul>
+                </li>
+                
+                <li class="nav-item dropdown">
+                    <a class="nav-link active dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Счета
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li><a class="dropdown-item" href="{% url 'wallets' %}">Все счета</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% for wallet in wallets %}
+                            <li><a class="dropdown-item" href="{{ wallet.get_absolute_url }}">{{ wallet }}</a></li>
+                        {% endfor %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'wallet_new' %}">Добавить новый счёт</a></li>
+                    </ul>
+                </li>
+                
+                <li class="nav-item dropdown">
+                    <a class="nav-link active dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Категории
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li><a class="dropdown-item" href="{% url 'categories' %}">Все категории</a></li>
+                        <li><hr class="dropdown-divider"></li>
+    
+                        <li><a class="dropdown-item" href="{% url 'categories' %}?type=pay">Расходные</a></li>
+                        <li><a class="dropdown-item" href="{% url 'categories' %}?type=earn">Доходные</a></li>
+    
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'category_new' %}">Добавить новую категорию</a></li>
+                    </ul>
+                </li>
+                
+                <li class="nav-item"><a class="nav-link disabled" aria-current="page" href="#">Анализ</a></li>
+                <li class="nav-item"><a class="nav-link disabled" aria-current="page" href="#">Бюджет</a></li>
+                <li class="nav-item"><a class="nav-link active" aria-current="page" href="{% url 'settings' %}">Настройки</a></li>
+            </ul>
+            <span class="navbar-text">
+            {% if request.user.is_authenticated %}
+                <div class="hstack gap-3">
+                    {% if optional_name %}
+                        <div class="fs-6">Добро пожаловать, {{ optional_name }}. Общий баланс: {{ overall_balance }} {{ main_currency.name }}</div>
+                    {% else %}
+                        <div class="fs-6">Добро пожаловать, {{ user.username }}. Общий баланс: {{ overall_balance }} {{ main_currency.name }}</div>
+                    {% endif %}
+                    <div class="vr"></div>
+                    <a href="{% url 'logout' %}" class="btn btn-outline-danger">Выход</a>
+                </div>
+            {% else %}
+                <div class="hstack gap-3">
+                    <a href="{% url 'register' %}" class="btn btn-outline-success">Регистрация</a>
+                    <div class="vr"></div>
+                    <a href="{% url 'login' %}" class="btn btn-outline-secondary">Вход</a>
+                </div>
+            {% endif %}
+            </span>
+        </div>
+    </div>
+</nav>

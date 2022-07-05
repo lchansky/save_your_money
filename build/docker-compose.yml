@@ -1,0 +1,24 @@
+version: "3.8"
+
+services: 
+  sym:
+    restart: always
+    build:
+      context: .
+    ports:
+      - "80:8000"
+    command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
+    volumes:
+      - "./src/db:/app/src/db"
+
+  redis:
+    image: redis
+    restart: always
+
+  worker:
+    restart: always
+    build:
+      context: .
+    volumes:
+      - "./src/db:/app/src/db"
+    command: ["celery", "--workdir=.", "-A", "sym_django", "worker"]

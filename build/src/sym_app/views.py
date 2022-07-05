@@ -13,10 +13,11 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 
 from sym_django.settings import TIME_ZONE
+from . import tasks
 from .decorators import check_permissions
 from .forms import *
 from .utils.utils import universal_context, load_exchange_rates_pks, \
-    load_wallets_currencies, update_currencies, write_currencies_to_json
+    load_wallets_currencies, write_currencies_to_json
 
 
 def about(request):
@@ -584,7 +585,8 @@ class Settings(LoginRequiredMixin, UpdateView):
 
 
 def upd_curr(request):
-    update_currencies()
+    print('Сельдерей')
+    tasks.update_currencies_db.delay()
     write_currencies_to_json()
     return render(request, 'sym_app/about.html')
 

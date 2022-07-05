@@ -10,3 +10,15 @@ services:
     command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
     volumes:
       - "./src/db:/app/src/db"
+
+  redis:
+    image: redis
+    restart: always
+
+  worker:
+    restart: always
+    build:
+      context: .
+    volumes:
+      - "./src/db:/app/src/db"
+    command: ["celery", "--workdir=.", "-A", "sym_django", "worker"]

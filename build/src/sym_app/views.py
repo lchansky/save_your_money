@@ -16,8 +16,8 @@ from sym_django.settings import TIME_ZONE
 from . import tasks
 from .decorators import check_permissions
 from .forms import *
-from .utils.utils import universal_context, load_exchange_rates_pks, \
-    load_wallets_currencies, write_currencies_to_json
+from .utils.celery import TaskManager
+from .utils.utils import universal_context, load_exchange_rates_pks, load_wallets_currencies
 
 
 def about(request):
@@ -585,9 +585,7 @@ class Settings(LoginRequiredMixin, UpdateView):
 
 
 def upd_curr(request):
-    print('Сельдерей')
-    tasks.update_currencies_db.delay()
-    write_currencies_to_json()
+    TaskManager.update_currencies()
     return render(request, 'sym_app/about.html')
 
     
